@@ -33,14 +33,7 @@ import urbanroute.tda.ListaEnlazada;
 import urbanroute.tda.Nodo;
 
 /**
- * Renderiza el GrafoPonderado propio con GraphStream (solo como biblioteca de dibujo;
- * los datos y algoritmos siguen en las estructuras propias).
- *
- * - Cada línea (L1, L2, ...) tiene su propio color; las conexiones entre líneas
- *   distintas (transbordos) se dibujan punteadas en gris oscuro.
- * - Zoom: rueda del mouse o botones Zoom + / Zoom -. "Ajustar" restablece la vista.
- * - Mover la vista: clic derecho (o central) y arrastrar.
- * Requiere gs-core y gs-ui-swing (GraphStream 2.0).
+ * Renderiza el GrafoPonderado propio con GraphStream.
  */
 public class VisualizadorGrafo {
     private static final String[] PALETA = {
@@ -65,23 +58,34 @@ public class VisualizadorGrafo {
         System.setProperty("org.graphstream.ui", "swing");
     }
 
-    // ---------- construcción del grafo visual ----------
+    // ---------- Construcción del grafo visual ----------
 
-    /** Reconstruye el grafo visual a partir del grafo en memoria. */
     public void construir() {
         graphStream = new SingleGraph("UrbanRoute");
         graphStream.setAttribute("ui.stylesheet", crearEstilos());
         graphStream.setAttribute("ui.quality");
         graphStream.setAttribute("ui.antialias");
 
+        // Coordenadas manuales fijas para evitar dependencias físicas
+        int posX = 0;
+        int posY = 0;
         for (Nodo n = grafo.getEstaciones().getCabeza(); n != null; n = n.getSiguiente()) {
             Estacion e = (Estacion) n.getDato();
             Node nodo = graphStream.addNode(e.getId());
             nodo.setAttribute("ui.label", e.getNombre());
+            
+            nodo.setAttribute("xy", posX, posY);
+            posX += 2;
+            if (posX > 10) {
+                posX = 0;
+                posY -= 2;
+            }
+
             String clase = "linea" + indiceLinea(e.getLinea());
             nodo.setAttribute("clase.base", clase);
             nodo.setAttribute("ui.class", clase);
         }
+
         for (Nodo n = grafo.getEstaciones().getCabeza(); n != null; n = n.getSiguiente()) {
             Estacion e = (Estacion) n.getDato();
             for (Nodo m = e.getConexiones().getCabeza(); m != null; m = m.getSiguiente()) {
@@ -101,7 +105,6 @@ public class VisualizadorGrafo {
         }
     }
 
-    /** Hoja de estilos con una clase de color por cada línea distinta (sin colecciones de Java). */
     private String crearEstilos() {
         StringBuilder css = new StringBuilder();
         css.append("graph { padding: 50px; }");
@@ -120,7 +123,6 @@ public class VisualizadorGrafo {
         return css.toString();
     }
 
-    /** Líneas distintas en orden de aparición (ListaEnlazada de String). */
     private ListaEnlazada lineasDistintas() {
         ListaEnlazada lineas = new ListaEnlazada();
         for (Nodo n = grafo.getEstaciones().getCabeza(); n != null; n = n.getSiguiente()) {
@@ -141,20 +143,15 @@ public class VisualizadorGrafo {
         return 0;
     }
 
-    // ---------- ventana con zoom ----------
+    // ---------- Componentes de Swing ----------
 
-    /**
-     * Construye el grafo visual y devuelve un panel listo para incrustar en cualquier
-     * contenedor Swing (p. ej. el JSplitPane de VentanaPrincipal). Incluye la barra de
-     * zoom, la vista de GraphStream y la leyenda de colores por línea.
-     * Cada llamada reconstruye el grafo desde la memoria y cierra la vista anterior.
-     */
     public Component obtenerComponenteVista() {
         cerrarViewer();
         construir();
 
-        viewer = new SwingViewer(graphStream, Viewer.ThreadingModel.GRAPH_IN_ANOTHER_THREAD);
-        viewer.enableAutoLayout();
+        viewer = new SwingViewer(graphStream, Viewer.ThreadingModel.GRAPH_IN_GUI_THREAD);
+        viewer.disableAutoLayout();
+        
         view = viewer.addDefaultView(false);
         Component vista = (Component) view;
         instalarControlesMouse(vista);
@@ -163,7 +160,7 @@ public class VisualizadorGrafo {
         barra.add(boton("Zoom +", () -> zoom(0.8)));
         barra.add(boton("Zoom -", () -> zoom(1.25)));
         barra.add(boton("Ajustar", () -> reiniciarVista()));
-        barra.add(new JLabel("   Rueda: zoom  |  Clic derecho + arrastrar: mover"));
+        barra.add(new JLabel("    Rueda: zoom  |  Clic derecho + arrastrar: mover"));
 
         JPanel leyenda = new JPanel(new FlowLayout(FlowLayout.LEFT));
         int i = 0;
@@ -184,7 +181,6 @@ public class VisualizadorGrafo {
         return panel;
     }
 
-    /** Alternativa: muestra el grafo en una ventana independiente. */
     public void mostrar() {
         cerrarVentana();
         Component panel = obtenerComponenteVista();
@@ -217,6 +213,7 @@ public class VisualizadorGrafo {
         return b;
     }
 
+    // Controles de zoom y navegación con mouse
     private void instalarControlesMouse(Component vista) {
         MouseAdapter adaptador = new MouseAdapter() {
             @Override
@@ -255,7 +252,6 @@ public class VisualizadorGrafo {
         vista.addMouseMotionListener(adaptador);
     }
 
-    /** factor < 1 acerca (zoom in); factor > 1 aleja (zoom out). */
     private void zoom(double factor) {
         if (view == null) return;
         Camera cam = view.getCamera();
@@ -270,7 +266,7 @@ public class VisualizadorGrafo {
         view.getCamera().resetView();
     }
 
-    // ---------- resaltado ----------
+    // ---------- Resaltado de rutas ----------
 
     public void resaltarNodo(String id) {
         if (graphStream == null) return;
@@ -280,7 +276,6 @@ public class VisualizadorGrafo {
         }
     }
 
-    /** Resalta nodos y aristas de una ruta (ListaEnlazada de Estacion en orden). */
     public void resaltarRuta(ListaEnlazada rutaEstaciones) {
         if (graphStream == null || rutaEstaciones == null) return;
         limpiarResaltado();
@@ -298,7 +293,6 @@ public class VisualizadorGrafo {
         }
     }
 
-    /** Devuelve nodos y aristas a su color de línea. */
     public void limpiarResaltado() {
         if (graphStream == null) return;
         for (Nodo n = grafo.getEstaciones().getCabeza(); n != null; n = n.getSiguiente()) {
