@@ -12,6 +12,10 @@ public class Cola {
         this.tamano = 0;
     }
 
+    /**
+     * Agrega un elemento al final de la cola.
+     * @param dato elemento a encolar
+     */
     public void enqueue(Object dato) {
         Nodo nuevo = new Nodo(dato);
         if (fin == null) {
@@ -39,6 +43,7 @@ public class Cola {
     }
 
     public Object verFrente() { return frente == null ? null : frente.getDato(); }
+    /** @return true si la cola no tiene elementos */
     public boolean estaVacia() { return frente == null; }
     public int tamano() { return tamano; }
 }
