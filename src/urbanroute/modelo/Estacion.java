@@ -3,15 +3,15 @@ package urbanroute.modelo;
 import urbanroute.tda.ListaEnlazada;
 
 /**
- * Estación de la red. Mantiene su lista de adyacencia (conexiones salientes),
- * y cada Conexion mantiene a su vez referencias a sus Estaciones: dependencia bidireccional.
+ * Estacion de la red. Guarda sus datos y la lista de conexiones que salen de ella.
+ * Dos estaciones son iguales si tienen el mismo id.
  */
 public class Estacion {
     private String id;
     private String nombre;
     private String linea;
     private int capacidad;
-    private ListaEnlazada conexiones; // elementos: Conexion
+    private ListaEnlazada conexiones;
 
     public Estacion(String id, String nombre, String linea, int capacidad) {
         this.id = id;
@@ -31,15 +31,15 @@ public class Estacion {
     public void setCapacidad(int capacidad) { this.capacidad = capacidad; }
     public ListaEnlazada getConexiones() { return conexiones; }
 
-    /** Grado de salida (número de conexiones). */
-    public int getGrado() { return conexiones.tamano(); }
+    /** Cantidad de conexiones que salen de la estacion. */
+    public int getGrado() { return conexiones.obtenerTamano(); }
 
-    /** Compara por ID (orden lexicográfico). Negativo, 0 o positivo. */
+    /** Compara los id en orden alfabetico. */
     public int comparar(Estacion otra) {
-        return this.id.compareTo(otra.id);
+        return id.compareTo(otra.id);
     }
 
-    /** Formato de línea para diccionario.csv: id,nombre,linea,capacidad */
+    /** Linea para diccionario.csv: id,nombre,linea,capacidad. */
     public String toCSVString() {
         return id + "," + nombre + "," + linea + "," + capacidad;
     }
