@@ -4,19 +4,17 @@ import urbanroute.tda.ListaEnlazada;
 import urbanroute.tda.Nodo;
 
 /**
- * Tabla hash propia: arreglo de cubetas (ListaEnlazada) con encadenamiento.
- * Capacidad dinámica: crece cuando el factor de carga supera 0.75.
- * Guarda una referencia al GrafoPonderado propietario (dependencia bidireccional:
- * el grafo posee el índice y el índice conoce a su grafo).
+ * Tabla hash que guarda las estaciones por su id.
+ * Las colisiones se resuelven con encadenamiento: cada casilla es una ListaEnlazada.
+ * Cuando se llena mas del 75% la tabla crece.
  */
 public class TablaHash {
     private static final int CAPACIDAD_INICIAL = 31;
-    private static final double FACTOR_CARGA_MAX = 0.75;
+    private static final double FACTOR_MAXIMO = 0.75;
 
-    /** Par clave-valor almacenado en cada cubeta. Igualdad por clave. */
     private static class Entrada {
-        final String clave;
-        Estacion valor;
+        private String clave;
+        private Estacion valor;
 
         Entrada(String clave, Estacion valor) {
             this.clave = clave;
@@ -32,8 +30,7 @@ public class TablaHash {
         public int hashCode() { return clave.hashCode(); }
     }
 
-    private ListaEnlazada[] cubetas;
-    private int capacidad;
+    private ListaEnlazada[] casillas;
     private int tamano;
     private GrafoPonderado propietario;
 
@@ -41,119 +38,101 @@ public class TablaHash {
         this(CAPACIDAD_INICIAL);
     }
 
-    public TablaHash(int capacidadInicial) {
-        this.capacidad = capacidadInicial < 1 ? CAPACIDAD_INICIAL : capacidadInicial;
-        this.cubetas = new ListaEnlazada[this.capacidad];
-        this.tamano = 0;
+    public TablaHash(int capacidad) {
+        if (capacidad < 1) {
+            capacidad = CAPACIDAD_INICIAL;
+        }
+        casillas = new ListaEnlazada[capacidad];
+        tamano = 0;
     }
 
-    /**
-     * Función hash propia (djb2 con módulo) sobre la clave.
-     * @param clave texto a convertir (ID de la estación)
-     * @param cap   capacidad del arreglo de cubetas
-     * @return posición de cubeta entre 0 y cap-1
-     */
-    private int hash(String clave, int cap) {
+    /** Funcion hash (tipo djb2). Devuelve un numero positivo; la posicion se saca con el modulo. */
+    private int hash(String clave) {
         long h = 5381;
         for (int i = 0; i < clave.length(); i++) {
             h = (h * 33 + clave.charAt(i)) % 2147483647L;
         }
-        return (int) (h % cap);
+        return (int) h;
     }
 
-    /**
-     * Inserta la estación bajo la clave dada; si la clave existe, reemplaza el valor.
-     * Las colisiones se resuelven con encadenamiento (ListaEnlazada por cubeta).
-     * @param key      clave (ID de la estación)
-     * @param estacion valor a guardar
-     */
-    public void insertar(String key, Estacion estacion) {
-        int pos = hash(key, capacidad);
-        if (cubetas[pos] == null) {
-            cubetas[pos] = new ListaEnlazada();
+    /** Guarda la estacion con esa clave. Si la clave ya existe, reemplaza el valor. */
+    public void insertar(String clave, Estacion estacion) {
+        int pos = hash(clave) % casillas.length;
+        if (casillas[pos] == null) {
+            casillas[pos] = new ListaEnlazada();
         }
-        Entrada existente = (Entrada) cubetas[pos].buscar(new Entrada(key, null));
+        Entrada existente = (Entrada) casillas[pos].buscar(new Entrada(clave, null));
         if (existente != null) {
             existente.valor = estacion;
             return;
         }
-        cubetas[pos].insertar(new Entrada(key, estacion));
+        casillas[pos].insertar(new Entrada(clave, estacion));
         tamano++;
-        if ((double) tamano / capacidad > FACTOR_CARGA_MAX) {
+        if ((double) tamano / casillas.length > FACTOR_MAXIMO) {
             redimensionar();
         }
     }
 
-    /**
-     * Busca una estación por clave.
-     * @param key clave (ID de la estación)
-     * @return la Estacion asociada, o null si no existe
-     */
-    public Estacion buscar(String key) {
-        int pos = hash(key, capacidad);
-        if (cubetas[pos] == null) {
+    /** Devuelve la estacion con esa clave, o null si no existe. */
+    public Estacion buscar(String clave) {
+        int pos = hash(clave) % casillas.length;
+        if (casillas[pos] == null) {
             return null;
         }
-        Entrada e = (Entrada) cubetas[pos].buscar(new Entrada(key, null));
+        Entrada e = (Entrada) casillas[pos].buscar(new Entrada(clave, null));
         return e == null ? null : e.valor;
     }
 
-    /**
-     * Elimina la clave de la tabla.
-     * @param key clave (ID de la estación)
-     * @return true si la clave existía
-     */
-    public boolean eliminar(String key) {
-        int pos = hash(key, capacidad);
-        if (cubetas[pos] == null) {
+    /** Elimina la clave. Devuelve true si existia. */
+    public boolean eliminar(String clave) {
+        int pos = hash(clave) % casillas.length;
+        if (casillas[pos] == null) {
             return false;
         }
-        boolean eliminado = cubetas[pos].eliminar(new Entrada(key, null));
-        if (eliminado) {
+        boolean eliminada = casillas[pos].eliminar(new Entrada(clave, null));
+        if (eliminada) {
             tamano--;
         }
-        return eliminado;
+        return eliminada;
     }
 
+    /** Duplica la capacidad y vuelve a calcular la posicion de cada entrada. */
     private void redimensionar() {
-        int nuevaCap = capacidad * 2 + 1;
-        ListaEnlazada[] nuevas = new ListaEnlazada[nuevaCap];
-        for (int i = 0; i < capacidad; i++) {
-            if (cubetas[i] == null) continue;
-            for (Nodo n = cubetas[i].getCabeza(); n != null; n = n.getSiguiente()) {
+        ListaEnlazada[] nuevas = new ListaEnlazada[casillas.length * 2 + 1];
+        for (int i = 0; i < casillas.length; i++) {
+            if (casillas[i] == null) continue;
+            for (Nodo n = casillas[i].getCabeza(); n != null; n = n.getSiguiente()) {
                 Entrada e = (Entrada) n.getDato();
-                int pos = hash(e.clave, nuevaCap);
+                int pos = hash(e.clave) % nuevas.length;
                 if (nuevas[pos] == null) {
                     nuevas[pos] = new ListaEnlazada();
                 }
                 nuevas[pos].insertar(e);
             }
         }
-        cubetas = nuevas;
-        capacidad = nuevaCap;
+        casillas = nuevas;
     }
 
-    /**
-     * Recorre todas las cubetas y reúne las estaciones guardadas.
-     * @return ListaEnlazada de Estacion (en orden de cubeta, no de inserción)
-     */
+    /** Devuelve todas las estaciones guardadas en una ListaEnlazada. */
     public ListaEnlazada obtenerTodas() {
         ListaEnlazada todas = new ListaEnlazada();
-        for (int i = 0; i < capacidad; i++) {
-            if (cubetas[i] == null) continue;
-            for (Nodo n = cubetas[i].getCabeza(); n != null; n = n.getSiguiente()) {
+        for (int i = 0; i < casillas.length; i++) {
+            if (casillas[i] == null) continue;
+            for (Nodo n = casillas[i].getCabeza(); n != null; n = n.getSiguiente()) {
                 todas.insertar(((Entrada) n.getDato()).valor);
             }
         }
         return todas;
     }
 
-    public boolean contiene(String key) { return buscar(key) != null; }
-    public int tamano() { return tamano; }
-    public int getCapacidad() { return capacidad; }
+    public boolean contiene(String clave) { return buscar(clave) != null; }
+
+    public int obtenerTamano() { return tamano; }
+
+    public int obtenerCapacidad() { return casillas.length; }
 
     public void limpiar() {
-        cubetas = new ListaEnlazada[capacidad];
+        casillas = new ListaEnlazada[casillas.length];
         tamano = 0;
     }
 
