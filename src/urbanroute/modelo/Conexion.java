@@ -1,9 +1,8 @@
 package urbanroute.modelo;
 
 /**
- * Arista ponderada entre dos estaciones.
- * Dos conexiones son iguales si comparten origen y destino (por ID),
- * lo que permite buscarlas/eliminarlas en una ListaEnlazada con una "sonda".
+ * Conexion entre dos estaciones con su tiempo de viaje en minutos.
+ * Dos conexiones son iguales si tienen el mismo origen y el mismo destino.
  */
 public class Conexion {
     private Estacion origen;
@@ -23,12 +22,12 @@ public class Conexion {
     public double getTiempo() { return tiempo; }
     public void setTiempo(double tiempo) { this.tiempo = tiempo; }
 
-    /** Dado un extremo, devuelve el otro. */
+    /** Dada una de las dos estaciones, devuelve la otra. */
     public Estacion getOtroExtremo(Estacion e) {
         return e.equals(origen) ? destino : origen;
     }
 
-    /** Formato de línea para grafo.csv: idOrigen,idDestino,tiempo */
+    /** Linea para grafo.csv: origen,destino,tiempo. */
     public String toCSVString() {
         return origen.getId() + "," + destino.getId() + "," + tiempo;
     }
