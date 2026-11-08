@@ -1,6 +1,8 @@
 package urbanroute.tda;
 
-/** Nodo simple enlazado. Base de ListaEnlazada y Cola. */
+/**
+ * Nodo de una estructura enlazada: guarda un dato y la referencia al nodo siguiente.
+ */
 public class Nodo {
     private Object dato;
     private Nodo siguiente;
