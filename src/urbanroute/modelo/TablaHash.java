@@ -47,7 +47,12 @@ public class TablaHash {
         this.tamano = 0;
     }
 
-    /** Función hash propia (djb2 con módulo) sobre la clave. */
+    /**
+     * Función hash propia (djb2 con módulo) sobre la clave.
+     * @param clave texto a convertir (ID de la estación)
+     * @param cap   capacidad del arreglo de cubetas
+     * @return posición de cubeta entre 0 y cap-1
+     */
     private int hash(String clave, int cap) {
         long h = 5381;
         for (int i = 0; i < clave.length(); i++) {
@@ -56,7 +61,12 @@ public class TablaHash {
         return (int) (h % cap);
     }
 
-    /** Inserta o reemplaza el valor asociado a la clave. */
+    /**
+     * Inserta la estación bajo la clave dada; si la clave existe, reemplaza el valor.
+     * Las colisiones se resuelven con encadenamiento (ListaEnlazada por cubeta).
+     * @param key      clave (ID de la estación)
+     * @param estacion valor a guardar
+     */
     public void insertar(String key, Estacion estacion) {
         int pos = hash(key, capacidad);
         if (cubetas[pos] == null) {
@@ -74,7 +84,11 @@ public class TablaHash {
         }
     }
 
-    /** Devuelve la Estacion asociada o null. */
+    /**
+     * Busca una estación por clave.
+     * @param key clave (ID de la estación)
+     * @return la Estacion asociada, o null si no existe
+     */
     public Estacion buscar(String key) {
         int pos = hash(key, capacidad);
         if (cubetas[pos] == null) {
@@ -84,7 +98,11 @@ public class TablaHash {
         return e == null ? null : e.valor;
     }
 
-    /** Elimina la clave. Devuelve true si existía. */
+    /**
+     * Elimina la clave de la tabla.
+     * @param key clave (ID de la estación)
+     * @return true si la clave existía
+     */
     public boolean eliminar(String key) {
         int pos = hash(key, capacidad);
         if (cubetas[pos] == null) {
@@ -115,7 +133,10 @@ public class TablaHash {
         capacidad = nuevaCap;
     }
 
-    /** Devuelve todas las estaciones en una ListaEnlazada (para guardar a CSV). */
+    /**
+     * Recorre todas las cubetas y reúne las estaciones guardadas.
+     * @return ListaEnlazada de Estacion (en orden de cubeta, no de inserción)
+     */
     public ListaEnlazada obtenerTodas() {
         ListaEnlazada todas = new ListaEnlazada();
         for (int i = 0; i < capacidad; i++) {
