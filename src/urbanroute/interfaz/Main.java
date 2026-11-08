@@ -1,20 +1,20 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Main.java to edit this template
- */
 package urbanroute.interfaz;
 
 import javax.swing.SwingUtilities;
 
+import urbanroute.interfaz.VentanaPrincipal;
+
+/**
+ * Único punto de entrada de UrbanRoute.
+ * Crea la ventana principal en el hilo de Swing.
+ */
 public class Main {
+
+    /**
+     * Inicia la aplicación.
+     * @param args no se usan
+     */
     public static void main(String[] args) {
-        // Ejecuta la GUI en el hilo de eventos de Swing por seguridad
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                VentanaPrincipal ventana = new VentanaPrincipal();
-                ventana.setVisible(true); // Hace visible la ventana
-            }
-        });
+        SwingUtilities.invokeLater(() -> new VentanaPrincipal().setVisible(true));
     }
 }
