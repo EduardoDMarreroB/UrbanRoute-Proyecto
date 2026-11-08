@@ -14,7 +14,6 @@ import urbanroute.modelo.Conexion;
 import urbanroute.modelo.Estacion;
 import urbanroute.modelo.GrafoPonderado;
 import urbanroute.modelo.TablaHash;
-import urbanroute.tda.ListaEnlazada;
 import urbanroute.tda.Nodo;
 
 /**
@@ -33,7 +32,15 @@ public class GestorArchivo {
         this.ventana = ventana;
     }
 
-    /** Carga estaciones; las puebla en la TablaHash y en el GrafoPonderado. Devuelve cuántas se cargaron. */
+    /**
+     * Lee diccionario.csv y crea las estaciones, registrándolas en el GrafoPonderado
+     * y en la TablaHash. Las líneas inválidas se omiten y se informan en la ventana.
+     * @param ruta  ruta del archivo diccionario.csv
+     * @param tabla TablaHash que se puebla
+     * @param grafo grafo al que se agregan los vértices
+     * @return cantidad de estaciones cargadas
+     * @throws IOException si el archivo no se puede leer
+     */
     public int cargarDiccionario(String ruta, TablaHash tabla, GrafoPonderado grafo) throws IOException {
         lineasInvalidas = 0;
         int cargadas = 0;
@@ -66,7 +73,14 @@ public class GestorArchivo {
         return cargadas;
     }
 
-    /** Carga conexiones. Requiere haber cargado antes el diccionario. Devuelve cuántas se cargaron. */
+    /**
+     * Lee grafo.csv y crea las conexiones entre estaciones ya cargadas.
+     * Requiere haber cargado antes el diccionario.
+     * @param ruta  ruta del archivo grafo.csv
+     * @param grafo grafo al que se agregan las aristas
+     * @return cantidad de conexiones cargadas
+     * @throws IOException si el archivo no se puede leer
+     */
     public int cargarGrafo(String ruta, GrafoPonderado grafo) throws IOException {
         lineasInvalidas = 0;
         int cargadas = 0;
@@ -97,8 +111,14 @@ public class GestorArchivo {
     }
 
     /**
-     * Guarda el estado actual en memoria. 'ruta' es una CARPETA; se escriben
-     * diccionario.csv y grafo.csv (sobrescribe si existen).
+     * Reescribe diccionario.csv y grafo.csv con el estado ACTUAL de la memoria
+     * (incluye altas y bajas hechas desde la interfaz). Sobrescribe si existen.
+     * Las estaciones se guardan en el orden del grafo, para que al volver a cargar
+     * cada línea conserve su orden. En un grafo no dirigido cada vía se escribe una vez.
+     * @param ruta  CARPETA de destino
+     * @param tabla TablaHash con las estaciones
+     * @param grafo grafo con las estaciones y sus conexiones
+     * @throws IOException si la ruta no es una carpeta o no se puede escribir
      */
     public void guardarCambiosCSV(String ruta, TablaHash tabla, GrafoPonderado grafo) throws IOException {
         File carpeta = new File(ruta);
@@ -107,9 +127,11 @@ public class GestorArchivo {
         }
         try (PrintWriter pw = abrirEscritura(new File(carpeta, "diccionario.csv"))) {
             pw.println("id,nombre,linea,capacidad");
-            ListaEnlazada todas = tabla.obtenerTodas();
-            for (Nodo n = todas.getCabeza(); n != null; n = n.getSiguiente()) {
-                pw.println(((Estacion) n.getDato()).toCSVString());
+            for (Nodo n = grafo.getEstaciones().getCabeza(); n != null; n = n.getSiguiente()) {
+                Estacion enTabla = tabla.buscar(((Estacion) n.getDato()).getId());
+                if (enTabla != null) {
+                    pw.println(enTabla.toCSVString());
+                }
             }
         }
         try (PrintWriter pw = abrirEscritura(new File(carpeta, "grafo.csv"))) {
