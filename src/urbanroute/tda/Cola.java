@@ -1,22 +1,21 @@
 package urbanroute.tda;
 
-/** Cola FIFO propia basada en Nodo. Usada por el recorrido BFS. */
+/**
+ * Cola FIFO hecha con nodos. Se usa en el recorrido BFS.
+ */
 public class Cola {
     private Nodo frente;
     private Nodo fin;
     private int tamano;
 
     public Cola() {
-        this.frente = null;
-        this.fin = null;
-        this.tamano = 0;
+        frente = null;
+        fin = null;
+        tamano = 0;
     }
 
-    /**
-     * Agrega un elemento al final de la cola.
-     * @param dato elemento a encolar
-     */
-    public void enqueue(Object dato) {
+    /** Agrega un dato al final de la cola. */
+    public void encolar(Object dato) {
         Nodo nuevo = new Nodo(dato);
         if (fin == null) {
             frente = nuevo;
@@ -28,8 +27,8 @@ public class Cola {
         tamano++;
     }
 
-    /** Extrae el elemento del frente; devuelve null si la cola está vacía. */
-    public Object dequeue() {
+    /** Saca y devuelve el dato del frente. Devuelve null si la cola esta vacia. */
+    public Object desencolar() {
         if (frente == null) {
             return null;
         }
@@ -42,8 +41,12 @@ public class Cola {
         return dato;
     }
 
-    public Object verFrente() { return frente == null ? null : frente.getDato(); }
-    /** @return true si la cola no tiene elementos */
-    public boolean estaVacia() { return frente == null; }
-    public int tamano() { return tamano; }
+    /** Devuelve el dato del frente sin sacarlo. */
+    public Object verFrente() {
+        return frente == null ? null : frente.getDato();
+    }
+
+    public boolean esVacia() { return frente == null; }
+
+    public int obtenerTamano() { return tamano; }
 }
