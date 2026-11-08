@@ -29,7 +29,11 @@ public class GrafoPonderado {
         this(indice, false);
     }
 
-    /** Agrega el vértice. Devuelve false si ya existía una estación con ese ID. */
+    /**
+     * Agrega una estación al grafo y la registra en la TablaHash (índice por ID).
+     * @param e estación a agregar
+     * @return false si es null o ya existía una estación con ese ID
+     */
     public boolean agregarEstacion(Estacion e) {
         if (e == null || estaciones.buscar(e) != null) {
             return false;
@@ -39,7 +43,12 @@ public class GrafoPonderado {
         return true;
     }
 
-    /** Elimina la estación y todas las conexiones que la tocan. */
+    /**
+     * Da de baja una estación: la saca de la TablaHash y de la lista de vértices, y
+     * elimina automáticamente todas las aristas que llegan a ella o salen de ella.
+     * @param id ID de la estación a eliminar
+     * @return false si no existe una estación con ese ID
+     */
     public boolean eliminarEstacion(String id) {
         Estacion e = indice.buscar(id);
         if (e == null) {
@@ -55,7 +64,14 @@ public class GrafoPonderado {
         return true;
     }
 
-    /** Agrega (o actualiza el tiempo de) la conexión origen-destino. */
+    /**
+     * Agrega la conexión origen-destino; si ya existía, solo actualiza su tiempo.
+     * En un grafo no dirigido crea también la arista de vuelta.
+     * @param origen  estación de partida
+     * @param destino estación de llegada
+     * @param tiempo  tiempo de viaje en minutos (no negativo)
+     * @return false si algún dato es inválido (null, misma estación o tiempo negativo)
+     */
     public boolean agregarConexion(Estacion origen, Estacion destino, double tiempo) {
         if (origen == null || destino == null || origen.equals(destino) || tiempo < 0) {
             return false;
@@ -80,6 +96,12 @@ public class GrafoPonderado {
         }
     }
 
+    /**
+     * Elimina la conexión origen-destino (y la de vuelta si el grafo no es dirigido).
+     * @param origen  estación de partida
+     * @param destino estación de llegada
+     * @return true si se eliminó alguna arista
+     */
     public boolean eliminarConexion(Estacion origen, Estacion destino) {
         if (origen == null || destino == null) {
             return false;
@@ -91,12 +113,49 @@ public class GrafoPonderado {
         return eliminada;
     }
 
-    /** Devuelve la lista de adyacencia de la estación: ListaEnlazada de Conexion. */
+    /**
+     * Lista de adyacencia de una estación.
+     * @param e estación consultada
+     * @return ListaEnlazada de Conexion salientes (vacía si e es null)
+     */
     public ListaEnlazada obtenerAdyacentes(Estacion e) {
         return e == null ? new ListaEnlazada() : e.getConexiones();
     }
 
+    /**
+     * Busca una estación por ID usando la TablaHash.
+     * @param id identificador de la estación
+     * @return la estación, o null si no existe
+     */
     public Estacion buscarEstacion(String id) { return indice.buscar(id); }
+
+    /**
+     * Busca la conexión directa origen-destino.
+     * @param origen  estación de partida
+     * @param destino estación de llegada
+     * @return la Conexion, o null si no existe
+     */
+    public Conexion buscarConexion(Estacion origen, Estacion destino) {
+        if (origen == null || destino == null) {
+            return null;
+        }
+        return (Conexion) origen.getConexiones().buscar(new Conexion(origen, destino, 0));
+    }
+
+    /**
+     * Líneas distintas presentes en la red, en orden de aparición.
+     * @return ListaEnlazada de String
+     */
+    public ListaEnlazada obtenerLineas() {
+        ListaEnlazada lineas = new ListaEnlazada();
+        for (Nodo n = estaciones.getCabeza(); n != null; n = n.getSiguiente()) {
+            String linea = ((Estacion) n.getDato()).getLinea();
+            if (lineas.buscar(linea) == null) {
+                lineas.insertar(linea);
+            }
+        }
+        return lineas;
+    }
 
     public int numEstaciones() { return estaciones.tamano(); }
 
