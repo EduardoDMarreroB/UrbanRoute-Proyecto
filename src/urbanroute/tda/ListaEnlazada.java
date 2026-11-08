@@ -1,10 +1,8 @@
 package urbanroute.tda;
 
 /**
- * Lista simplemente enlazada propia (sin Collections Framework).
- * Se usa para listas de adyacencia, cubetas de colisión de la TablaHash
- * y para devolver resultados de los algoritmos.
- * La comparación usa equals(), por lo que las entidades definen equals().
+ * Lista simplemente enlazada con referencia al primer y al ultimo nodo.
+ * Los datos se comparan con equals().
  */
 public class ListaEnlazada {
     private Nodo cabeza;
@@ -12,12 +10,12 @@ public class ListaEnlazada {
     private int tamano;
 
     public ListaEnlazada() {
-        this.cabeza = null;
-        this.ultimo = null;
-        this.tamano = 0;
+        cabeza = null;
+        ultimo = null;
+        tamano = 0;
     }
 
-    /** Inserta al final en O(1). */
+    /** Agrega un dato al final de la lista. */
     public void insertar(Object dato) {
         Nodo nuevo = new Nodo(dato);
         if (cabeza == null) {
@@ -30,7 +28,7 @@ public class ListaEnlazada {
         tamano++;
     }
 
-    /** Inserta al inicio en O(1). */
+    /** Agrega un dato al inicio de la lista. */
     public void insertarInicio(Object dato) {
         Nodo nuevo = new Nodo(dato);
         nuevo.setSiguiente(cabeza);
@@ -41,22 +39,22 @@ public class ListaEnlazada {
         tamano++;
     }
 
-    /** Devuelve el dato almacenado igual (equals) al buscado, o null si no existe. */
+    /** Devuelve el dato guardado que sea igual al recibido, o null si no esta. */
     public Object buscar(Object dato) {
         for (Nodo actual = cabeza; actual != null; actual = actual.getSiguiente()) {
-            if (iguales(actual.getDato(), dato)) {
+            if (sonIguales(actual.getDato(), dato)) {
                 return actual.getDato();
             }
         }
         return null;
     }
 
-    /** Elimina la primera coincidencia. Devuelve true si eliminó algo. */
+    /** Elimina la primera coincidencia. Devuelve true si elimino algo. */
     public boolean eliminar(Object dato) {
         Nodo previo = null;
         Nodo actual = cabeza;
         while (actual != null) {
-            if (iguales(actual.getDato(), dato)) {
+            if (sonIguales(actual.getDato(), dato)) {
                 if (previo == null) {
                     cabeza = actual.getSiguiente();
                 } else {
@@ -74,10 +72,10 @@ public class ListaEnlazada {
         return false;
     }
 
-    /** Obtiene el dato en la posición indicada (0-based). */
+    /** Devuelve el dato de la posicion indicada (la primera es la 0). */
     public Object obtener(int indice) {
         if (indice < 0 || indice >= tamano) {
-            throw new IndexOutOfBoundsException("Índice " + indice + ", tamaño " + tamano);
+            throw new IndexOutOfBoundsException("Indice " + indice + ", tamano " + tamano);
         }
         Nodo actual = cabeza;
         for (int i = 0; i < indice; i++) {
@@ -86,8 +84,9 @@ public class ListaEnlazada {
         return actual.getDato();
     }
 
-    public int tamano() { return tamano; }
-    public boolean estaVacia() { return tamano == 0; }
+    public int obtenerTamano() { return tamano; }
+
+    public boolean esVacia() { return tamano == 0; }
 
     public void vaciar() {
         cabeza = null;
@@ -95,10 +94,10 @@ public class ListaEnlazada {
         tamano = 0;
     }
 
-    /** Acceso al primer nodo para recorridos: for (Nodo n = l.getCabeza(); n != null; n = n.getSiguiente()). */
+    /** Primer nodo de la lista, para poder recorrerla. */
     public Nodo getCabeza() { return cabeza; }
 
-    private static boolean iguales(Object a, Object b) {
+    private boolean sonIguales(Object a, Object b) {
         return a == b || (a != null && a.equals(b));
     }
 }
