@@ -33,7 +33,8 @@ import urbanroute.tda.ListaEnlazada;
 import urbanroute.tda.Nodo;
 
 /**
- * Renderiza el GrafoPonderado propio con GraphStream.
+ * Dibuja el grafo con GraphStream. Cada linea va en su propia fila y tiene su color.
+ * Los datos y los algoritmos siguen siendo los de las estructuras propias.
  */
 public class VisualizadorGrafo {
     private static final String[] PALETA = {
@@ -41,8 +42,8 @@ public class VisualizadorGrafo {
         "#d62728", "#8c564b", "#e377c2", "#bcbd22", "#7f7f7f"
     };
     private static final String COLOR_RESALTADO = "#e8453c";
-    private static final double ESPACIO_X = 3;   // separación entre estaciones de una línea
-    private static final double ESPACIO_Y = 4;   // separación entre líneas
+    private static final double ESPACIO_X = 3;
+    private static final double ESPACIO_Y = 4;
 
     private GrafoPonderado grafo;
     private AnalizadorRed analizador;
@@ -61,22 +62,15 @@ public class VisualizadorGrafo {
         System.setProperty("org.graphstream.ui", "swing");
     }
 
-    // ---------- Construcción del grafo visual ----------
-
-    /**
-     * Construye el grafo de GraphStream desde cero a partir de la memoria:
-     * una fila por línea, un nodo por estación y una arista por conexión.
-     */
+    /** Arma el grafo de GraphStream desde cero: una fila por linea y una arista por conexion. */
     public void construir() {
         graphStream = new SingleGraph("UrbanRoute");
         graphStream.setAttribute("ui.stylesheet", crearEstilos());
         graphStream.setAttribute("ui.quality");
         graphStream.setAttribute("ui.antialias");
 
-        // Cada línea ocupa su propia fila; sus estaciones van de izquierda a derecha
-        // en el orden en que aparecen en diccionario.csv. Luego se pueden mover a mano.
         int fila = 0;
-        for (Nodo l = lineasDistintas().getCabeza(); l != null; l = l.getSiguiente()) {
+        for (Nodo l = grafo.obtenerLineas().getCabeza(); l != null; l = l.getSiguiente()) {
             String linea = (String) l.getDato();
             int columna = 0;
             for (Nodo n = grafo.getEstaciones().getCabeza(); n != null; n = n.getSiguiente()) {
@@ -87,10 +81,8 @@ public class VisualizadorGrafo {
                 nodo.setAttribute("ui.label", e.getNombre());
                 nodo.setAttribute("xy", columna * ESPACIO_X, -fila * ESPACIO_Y);
                 if (columna % 2 == 1) {
-                    // Etiquetas alternas (arriba/abajo) para que no se pisen
                     nodo.setAttribute("ui.style", "text-alignment: under;");
                 }
-
                 String clase = "linea" + fila;
                 nodo.setAttribute("clase.base", clase);
                 nodo.setAttribute("ui.class", clase);
@@ -98,11 +90,9 @@ public class VisualizadorGrafo {
             }
             fila++;
         }
-
         agregarAristas();
     }
 
-    /** Crea en el dibujo una arista por cada conexión del modelo (sin duplicar las de ida y vuelta). */
     private void agregarAristas() {
         for (Nodo n = grafo.getEstaciones().getCabeza(); n != null; n = n.getSiguiente()) {
             Estacion e = (Estacion) n.getDato();
@@ -129,7 +119,7 @@ public class VisualizadorGrafo {
         css.append("node { size: 16px; text-size: 13px; text-alignment: above; text-style: bold; }");
         css.append("edge { size: 2px; text-size: 10px; }");
         int i = 0;
-        for (Nodo n = lineasDistintas().getCabeza(); n != null; n = n.getSiguiente()) {
+        for (Nodo n = grafo.obtenerLineas().getCabeza(); n != null; n = n.getSiguiente()) {
             String color = PALETA[i % PALETA.length];
             css.append("node.linea").append(i).append(" { fill-color: ").append(color).append("; }");
             css.append("edge.linea").append(i).append(" { fill-color: ").append(color).append("; size: 3px; }");
@@ -141,26 +131,18 @@ public class VisualizadorGrafo {
         return css.toString();
     }
 
-    private ListaEnlazada lineasDistintas() {
-        return grafo.obtenerLineas();
-    }
-
     private int indiceLinea(String linea) {
         int i = 0;
-        for (Nodo n = lineasDistintas().getCabeza(); n != null; n = n.getSiguiente()) {
+        for (Nodo n = grafo.obtenerLineas().getCabeza(); n != null; n = n.getSiguiente()) {
             if (linea.equals(n.getDato())) return i;
             i++;
         }
         return 0;
     }
 
-    // ---------- Componentes de Swing ----------
-
     /**
-     * Construye el grafo y devuelve un panel Swing (barra de zoom + dibujo + leyenda)
-     * listo para incrustar en la ventana principal. Cada llamada reconstruye el dibujo
-     * (las posiciones movidas a mano se pierden; para altas y bajas use {@link #sincronizar()}).
-     * @return panel con el grafo
+     * Construye el grafo y devuelve un panel con los botones de zoom, el dibujo y la leyenda.
+     * Cada llamada vuelve a dibujar todo desde cero.
      */
     public Component obtenerComponenteVista() {
         cerrarViewer();
@@ -168,7 +150,6 @@ public class VisualizadorGrafo {
 
         viewer = new SwingViewer(graphStream, Viewer.ThreadingModel.GRAPH_IN_GUI_THREAD);
         viewer.disableAutoLayout();
-        
         view = viewer.addDefaultView(false);
         Component vista = (Component) view;
         instalarControlesMouse(vista);
@@ -189,6 +170,7 @@ public class VisualizadorGrafo {
         return panel;
     }
 
+    /** Muestra el grafo en una ventana aparte. */
     public void mostrar() {
         cerrarVentana();
         Component panel = obtenerComponenteVista();
@@ -215,52 +197,46 @@ public class VisualizadorGrafo {
         }
     }
 
-    /** Rellena la leyenda con un cuadro de color por línea y el aviso de transbordo. */
     private void llenarLeyenda() {
         if (leyenda == null) return;
         leyenda.removeAll();
         int i = 0;
-        for (Nodo n = lineasDistintas().getCabeza(); n != null; n = n.getSiguiente()) {
-            JLabel l = new JLabel("\u25A0 " + n.getDato());
-            l.setForeground(Color.decode(PALETA[i % PALETA.length]));
-            leyenda.add(l);
+        for (Nodo n = grafo.obtenerLineas().getCabeza(); n != null; n = n.getSiguiente()) {
+            JLabel etiqueta = new JLabel("\u25A0 " + n.getDato());
+            etiqueta.setForeground(Color.decode(PALETA[i % PALETA.length]));
+            leyenda.add(etiqueta);
             i++;
         }
-        JLabel transb = new JLabel("- - transbordo");
-        transb.setForeground(Color.DARK_GRAY);
-        leyenda.add(transb);
+        JLabel transbordo = new JLabel("- - transbordo");
+        transbordo.setForeground(Color.DARK_GRAY);
+        leyenda.add(transbordo);
         leyenda.revalidate();
         leyenda.repaint();
     }
 
-    /** @return true si el grafo ya se construyó en pantalla */
     public boolean estaMostrandose() {
         return graphStream != null;
     }
 
     /**
-     * Pone el dibujo al día con la memoria después de altas o bajas, SIN reconstruirlo:
-     * las estaciones que ya estaban conservan la posición que el usuario les dio.
-     * Si el grafo todavía no se ha mostrado, no hace nada.
+     * Actualiza el dibujo despues de agregar o eliminar estaciones y conexiones.
+     * Las estaciones que ya estaban dibujadas conservan su posicion.
+     * Si el grafo todavia no se ha mostrado, no hace nada.
      */
     public void sincronizar() {
         if (graphStream == null) return;
 
-        // 1) Quitar las estaciones que ya no existen (GraphStream borra también sus aristas)
         for (int i = graphStream.getNodeCount() - 1; i >= 0; i--) {
             Node nodo = graphStream.getNode(i);
             if (grafo.buscarEstacion(nodo.getId()) == null) {
                 graphStream.removeNode(nodo);
             }
         }
-        // 2) Quitar todas las aristas; se vuelven a crear desde el modelo
         for (int i = graphStream.getEdgeCount() - 1; i >= 0; i--) {
             graphStream.removeEdge(graphStream.getEdge(i));
         }
-        // 3) Estilos al día (puede haber aparecido o desaparecido una línea)
         graphStream.setAttribute("ui.stylesheet", crearEstilos());
 
-        // 4) Agregar las estaciones nuevas y refrescar el color de todas
         for (Nodo n = grafo.getEstaciones().getCabeza(); n != null; n = n.getSiguiente()) {
             Estacion e = (Estacion) n.getDato();
             int fila = indiceLinea(e.getLinea());
@@ -278,13 +254,10 @@ public class VisualizadorGrafo {
             nodo.setAttribute("clase.base", clase);
             nodo.setAttribute("ui.class", clase);
         }
-
-        // 5) Aristas y leyenda
         agregarAristas();
         llenarLeyenda();
     }
 
-    /** Lugar (0, 1, 2...) que ocupa la estación entre las de su misma línea. */
     private int posicionEnLinea(Estacion estacion) {
         int posicion = 0;
         for (Nodo n = grafo.getEstaciones().getCabeza(); n != null; n = n.getSiguiente()) {
@@ -301,7 +274,6 @@ public class VisualizadorGrafo {
         return b;
     }
 
-    // Controles de zoom y navegación con mouse
     private void instalarControlesMouse(Component vista) {
         MouseAdapter adaptador = new MouseAdapter() {
             @Override
@@ -354,8 +326,6 @@ public class VisualizadorGrafo {
         view.getCamera().resetView();
     }
 
-    // ---------- Resaltado de rutas ----------
-
     public void resaltarNodo(String id) {
         if (graphStream == null) return;
         Node n = graphStream.getNode(id);
@@ -364,10 +334,7 @@ public class VisualizadorGrafo {
         }
     }
 
-    /**
-     * Pinta en rojo los nodos y aristas de una ruta.
-     * @param rutaEstaciones ListaEnlazada de Estacion en orden de recorrido
-     */
+    /** Pinta en rojo las estaciones y conexiones de una ruta (lista de estaciones en orden). */
     public void resaltarRuta(ListaEnlazada rutaEstaciones) {
         if (graphStream == null || rutaEstaciones == null) return;
         limpiarResaltado();
@@ -385,7 +352,7 @@ public class VisualizadorGrafo {
         }
     }
 
-    /** Devuelve nodos y aristas a su color de línea. */
+    /** Devuelve estaciones y conexiones a su color de linea. */
     public void limpiarResaltado() {
         if (graphStream == null) return;
         for (Nodo n = grafo.getEstaciones().getCabeza(); n != null; n = n.getSiguiente()) {
