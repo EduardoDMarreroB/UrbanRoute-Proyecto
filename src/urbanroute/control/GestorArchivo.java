@@ -17,12 +17,9 @@ import urbanroute.modelo.TablaHash;
 import urbanroute.tda.Nodo;
 
 /**
- * Lectura y escritura de CSV.
- *  diccionario.csv -> id,nombre,linea,capacidad
- *  grafo.csv       -> idOrigen,idDestino,tiempo
- * Se ignoran líneas vacías, comentarios (#) y la cabecera (primer campo "id"/"origen").
- * Los campos no pueden contener comas. Colabora con VentanaPrincipal para reportar
- * líneas inválidas (dependencia bidireccional).
+ * Lee y guarda los archivos CSV.
+ * diccionario.csv: id,nombre,linea,capacidad. grafo.csv: origen,destino,tiempo.
+ * Las lineas con errores se omiten y se avisan en la ventana.
  */
 public class GestorArchivo {
     private VentanaPrincipal ventana;
@@ -33,15 +30,10 @@ public class GestorArchivo {
     }
 
     /**
-     * Lee diccionario.csv y crea las estaciones, registrándolas en el GrafoPonderado
-     * y en la TablaHash. Las líneas inválidas se omiten y se informan en la ventana.
-     * @param ruta  ruta del archivo diccionario.csv
-     * @param tabla TablaHash que se puebla
-     * @param grafo grafo al que se agregan los vértices
-     * @return cantidad de estaciones cargadas
-     * @throws IOException si el archivo no se puede leer
+     * Lee diccionario.csv y agrega las estaciones al grafo y a la tabla hash.
+     * Devuelve cuantas estaciones se cargaron.
      */
-    public int cargarDiccionario(String ruta, TablaHash tabla, GrafoPonderado grafo) throws IOException {
+    public int cargarEstaciones(String ruta, TablaHash tabla, GrafoPonderado grafo) throws IOException {
         lineasInvalidas = 0;
         int cargadas = 0;
         try (BufferedReader br = abrirLectura(ruta)) {
@@ -60,7 +52,7 @@ public class GestorArchivo {
                     int capacidad = Integer.parseInt(c[3].trim());
                     Estacion e = new Estacion(id, c[1].trim(), c[2].trim(), capacidad);
                     if (id.isEmpty() || !grafo.agregarEstacion(e)) {
-                        reportarInvalida(numLinea, linea + "  (ID vacío o duplicado)");
+                        reportarInvalida(numLinea, linea + "  (id vacio o repetido)");
                         continue;
                     }
                     tabla.insertar(id, e);
@@ -74,14 +66,10 @@ public class GestorArchivo {
     }
 
     /**
-     * Lee grafo.csv y crea las conexiones entre estaciones ya cargadas.
-     * Requiere haber cargado antes el diccionario.
-     * @param ruta  ruta del archivo grafo.csv
-     * @param grafo grafo al que se agregan las aristas
-     * @return cantidad de conexiones cargadas
-     * @throws IOException si el archivo no se puede leer
+     * Lee grafo.csv y agrega las conexiones. Las estaciones ya deben estar cargadas.
+     * Devuelve cuantas conexiones se cargaron.
      */
-    public int cargarGrafo(String ruta, GrafoPonderado grafo) throws IOException {
+    public int cargarConexiones(String ruta, GrafoPonderado grafo) throws IOException {
         lineasInvalidas = 0;
         int cargadas = 0;
         try (BufferedReader br = abrirLectura(ruta)) {
@@ -100,7 +88,7 @@ public class GestorArchivo {
                     if (grafo.agregarConexion(c[0].trim(), c[1].trim(), tiempo)) {
                         cargadas++;
                     } else {
-                        reportarInvalida(numLinea, linea + "  (estación inexistente o tiempo inválido)");
+                        reportarInvalida(numLinea, linea + "  (estacion inexistente o tiempo invalido)");
                     }
                 } catch (NumberFormatException ex) {
                     reportarInvalida(numLinea, linea);
@@ -111,21 +99,16 @@ public class GestorArchivo {
     }
 
     /**
-     * Reescribe diccionario.csv y grafo.csv con el estado ACTUAL de la memoria
-     * (incluye altas y bajas hechas desde la interfaz). Sobrescribe si existen.
-     * Las estaciones se guardan en el orden del grafo, para que al volver a cargar
-     * cada línea conserve su orden. En un grafo no dirigido cada vía se escribe una vez.
-     * @param ruta  CARPETA de destino
-     * @param tabla TablaHash con las estaciones
-     * @param grafo grafo con las estaciones y sus conexiones
-     * @throws IOException si la ruta no es una carpeta o no se puede escribir
+     * Guarda en la carpeta indicada diccionario.csv y grafo.csv con lo que hay en memoria.
+     * Las estaciones se escriben en el orden del grafo y, si el grafo no es dirigido,
+     * cada conexion se escribe una sola vez.
      */
-    public void guardarCambiosCSV(String ruta, TablaHash tabla, GrafoPonderado grafo) throws IOException {
-        File carpeta = new File(ruta);
-        if (!carpeta.isDirectory()) {
-            throw new IOException("La ruta no es una carpeta: " + ruta);
+    public void guardarCambios(String carpeta, TablaHash tabla, GrafoPonderado grafo) throws IOException {
+        File destino = new File(carpeta);
+        if (!destino.isDirectory()) {
+            throw new IOException("La ruta no es una carpeta: " + carpeta);
         }
-        try (PrintWriter pw = abrirEscritura(new File(carpeta, "diccionario.csv"))) {
+        try (PrintWriter pw = abrirEscritura(new File(destino, "diccionario.csv"))) {
             pw.println("id,nombre,linea,capacidad");
             for (Nodo n = grafo.getEstaciones().getCabeza(); n != null; n = n.getSiguiente()) {
                 Estacion enTabla = tabla.buscar(((Estacion) n.getDato()).getId());
@@ -134,13 +117,12 @@ public class GestorArchivo {
                 }
             }
         }
-        try (PrintWriter pw = abrirEscritura(new File(carpeta, "grafo.csv"))) {
+        try (PrintWriter pw = abrirEscritura(new File(destino, "grafo.csv"))) {
             pw.println("origen,destino,tiempo");
             for (Nodo n = grafo.getEstaciones().getCabeza(); n != null; n = n.getSiguiente()) {
                 Estacion e = (Estacion) n.getDato();
                 for (Nodo m = e.getConexiones().getCabeza(); m != null; m = m.getSiguiente()) {
                     Conexion c = (Conexion) m.getDato();
-                    // En un grafo no dirigido la vía se escribe una sola vez.
                     if (grafo.esDirigido() || c.getOrigen().comparar(c.getDestino()) < 0) {
                         pw.println(c.toCSVString());
                     }
@@ -148,8 +130,6 @@ public class GestorArchivo {
             }
         }
     }
-
-    // ---------- utilidades privadas ----------
 
     private BufferedReader abrirLectura(String ruta) throws IOException {
         return new BufferedReader(new InputStreamReader(new FileInputStream(ruta), "UTF-8"));
@@ -169,7 +149,7 @@ public class GestorArchivo {
     private void reportarInvalida(int numLinea, String linea) {
         lineasInvalidas++;
         if (ventana != null) {
-            ventana.mostrarMensaje("Línea " + numLinea + " omitida: " + linea);
+            ventana.mostrarMensaje("Linea " + numLinea + " omitida: " + linea);
         }
     }
 
