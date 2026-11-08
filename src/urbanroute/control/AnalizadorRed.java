@@ -9,49 +9,32 @@ import urbanroute.tda.ListaEnlazada;
 import urbanroute.tda.Nodo;
 
 /**
- * Algoritmos de análisis sobre el GrafoPonderado: ruta mínima (Dijkstra),
- * subredes aisladas (BFS) y hubs (centralidad de grado).
- * Colabora con GrafoPonderado (lo recibe y se registra en él) y con VisualizadorGrafo
- * (para resaltar resultados): dependencia bidireccional.
- * Prohibido usar Collections: se usan ListaEnlazada, Cola y arreglos.
+ * Algoritmos sobre el grafo: ruta minima (Dijkstra), subredes aisladas (BFS)
+ * y estaciones con mas conexiones (centralidad de grado).
  */
 public class AnalizadorRed {
     private GrafoPonderado grafo;
     private VisualizadorGrafo visualizador;
     private double ultimoTiempoRuta;
 
-    /**
-     * Crea el analizador y se registra en el grafo (relación bidireccional).
-     * @param grafo grafo sobre el que se ejecutarán los algoritmos
-     */
     public AnalizadorRed(GrafoPonderado grafo) {
         this.grafo = grafo;
         this.grafo.setAnalizador(this);
     }
 
-    // =====================================================================
-    //  DIJKSTRA
-    // =====================================================================
-
     /**
-     * Ruta de menor tiempo entre dos estaciones (algoritmo de Dijkstra).
-     * La estación con menor distancia se busca recorriendo un arreglo (sin cola de prioridad).
-     * Complejidad O(V^2), suficiente para una red de metro.
-     *
-     * @param origen  ID o nombre de la estación de partida
-     * @param destino ID o nombre de la estación de llegada
-     * @return ListaEnlazada de Estacion desde el origen hasta el destino (ambos incluidos),
-     *         o null si alguna estación no existe o no hay camino.
-     *         El tiempo total acumulado queda disponible en {@link #getUltimoTiempoRuta()}.
+     * Calcula la ruta de menor tiempo entre dos estaciones (id o nombre).
+     * Devuelve la lista de estaciones del origen al destino, o null si no hay camino.
+     * El tiempo total queda en getUltimoTiempoRuta().
+     * Complejidad: O(V^2 + E*V).
      */
     public ListaEnlazada dijkstra(String origen, String destino) {
-        Estacion estOrigen = buscarPorIdONombre(origen);
-        Estacion estDestino = buscarPorIdONombre(destino);
+        Estacion estOrigen = buscarEstacion(origen);
+        Estacion estDestino = buscarEstacion(destino);
         if (estOrigen == null || estDestino == null) {
             return null;
         }
 
-        // Copiamos las estaciones a un arreglo para trabajar con posiciones enteras.
         int cantidad = grafo.numEstaciones();
         Estacion[] vertices = new Estacion[cantidad];
         int i = 0;
@@ -71,31 +54,29 @@ public class AnalizadorRed {
         distancia[posOrigen] = 0;
 
         for (int paso = 0; paso < cantidad; paso++) {
-            int u = seleccionarMinimo(distancia, visitado);
-            if (u == -1) break;              // lo que queda es inalcanzable
+            int u = buscarMinimo(distancia, visitado);
+            if (u == -1) break;
             visitado[u] = true;
-            if (u == posDestino) break;      // la distancia al destino ya es definitiva
+            if (u == posDestino) break;
 
-            // Relajar las aristas que salen de u
-            ListaEnlazada adyacentes = grafo.obtenerAdyacentes(vertices[u]);
-            for (Nodo nc = adyacentes.getCabeza(); nc != null; nc = nc.getSiguiente()) {
+            ListaEnlazada vecinos = grafo.obtenerVecinos(vertices[u]);
+            for (Nodo nc = vecinos.getCabeza(); nc != null; nc = nc.getSiguiente()) {
                 Conexion c = (Conexion) nc.getDato();
                 int v = posicionDe(vertices, c.getDestino());
                 if (v == -1 || visitado[v]) continue;
-                double candidata = distancia[u] + c.getTiempo();
-                if (candidata < distancia[v]) {
-                    distancia[v] = candidata;
+                double nuevaDistancia = distancia[u] + c.getTiempo();
+                if (nuevaDistancia < distancia[v]) {
+                    distancia[v] = nuevaDistancia;
                     previo[v] = u;
                 }
             }
         }
 
         if (distancia[posDestino] == Double.POSITIVE_INFINITY) {
-            return null;                     // no existe camino
+            return null;
         }
         ultimoTiempoRuta = distancia[posDestino];
 
-        // Reconstruir desde el destino hacia el origen; insertarInicio deja el orden correcto.
         ListaEnlazada ruta = new ListaEnlazada();
         for (int actual = posDestino; actual != -1; actual = previo[actual]) {
             ruta.insertarInicio(vertices[actual]);
@@ -103,133 +84,39 @@ public class AnalizadorRed {
         return ruta;
     }
 
-    // =====================================================================
-    //  SUBREDES AISLADAS (BFS)
-    // =====================================================================
-
     /**
-     * Componentes conexos de la red actual (cada componente es una subred).
-     * @return ListaEnlazada de ListaEnlazada de Estacion (una lista por componente).
+     * Agrupa las estaciones en subredes (componentes conexos) usando BFS.
+     * Devuelve una lista donde cada elemento es la ListaEnlazada de estaciones de una subred.
      */
-    public ListaEnlazada componentesAislados() {
-        return componentes(null, null);
+    public ListaEnlazada detectarSubredesBFS() {
+        return agruparSubredes(null, null);
     }
 
-    /**
-     * Simula la baja de UNA estación y calcula las subredes que quedarían.
-     * No modifica el grafo: la estación simplemente se ignora durante el recorrido.
-     *
-     * @param idEstacion ID de la estación que se "desconecta"
-     * @return ListaEnlazada de ListaEnlazada de Estacion (una lista por subred resultante)
-     */
-    public ListaEnlazada componentesSinEstacion(String idEstacion) {
-        return componentes(idEstacion, null);
+    /** Igual que detectarSubredesBFS pero sin tomar en cuenta una estacion (simula su baja). */
+    public ListaEnlazada detectarSubredesSinEstacion(String idEstacion) {
+        return agruparSubredes(idEstacion, null);
     }
 
-    /**
-     * Simula la baja de una LÍNEA completa y calcula las subredes que quedarían.
-     * No modifica el grafo.
-     *
-     * @param linea nombre de la línea que se "desconecta"
-     * @return ListaEnlazada de ListaEnlazada de Estacion (una lista por subred resultante)
-     */
-    public ListaEnlazada componentesSinLinea(String linea) {
-        return componentes(null, linea);
+    /** Igual que detectarSubredesBFS pero sin tomar en cuenta una linea completa (simula su baja). */
+    public ListaEnlazada detectarSubredesSinLinea(String linea) {
+        return agruparSubredes(null, linea);
     }
 
-    /**
-     * Recorrido BFS desde 'inicio' usando la Cola propia.
-     * @param inicio estación de partida
-     * @return estaciones alcanzadas, en orden de visita
-     */
+    /** Recorrido en anchura desde la estacion de inicio. Devuelve las estaciones en orden de visita. */
     public ListaEnlazada bfs(Estacion inicio) {
-        return bfs(inicio, null, null);
+        return recorrerBFS(inicio, null, null);
     }
 
-    /** Agrupa por BFS todas las estaciones no excluidas. */
-    private ListaEnlazada componentes(String idExcluido, String lineaExcluida) {
-        ListaEnlazada componentes = new ListaEnlazada();
-        Estacion[] yaAsignadas = new Estacion[grafo.numEstaciones()];
-        int cantAsignadas = 0;
-
-        for (Nodo n = grafo.getEstaciones().getCabeza(); n != null; n = n.getSiguiente()) {
-            Estacion est = (Estacion) n.getDato();
-            if (estaExcluida(est, idExcluido, lineaExcluida)) continue;
-
-            if (!estaEn(yaAsignadas, cantAsignadas, est)) {
-                ListaEnlazada subred = bfs(est, idExcluido, lineaExcluida);
-                componentes.insertar(subred);
-                for (Nodo m = subred.getCabeza(); m != null; m = m.getSiguiente()) {
-                    yaAsignadas[cantAsignadas++] = (Estacion) m.getDato();
-                }
-            }
-        }
-        return componentes;
-    }
-
-    /** BFS que ignora la estación (por ID) o la línea excluidas; null significa "no excluir". */
-    private ListaEnlazada bfs(Estacion inicio, String idExcluido, String lineaExcluida) {
-        ListaEnlazada resultado = new ListaEnlazada();
-        if (inicio == null || estaExcluida(inicio, idExcluido, lineaExcluida)) {
-            return resultado;
-        }
-
-        Cola pendientes = new Cola();
-        Estacion[] vistos = new Estacion[grafo.numEstaciones()];
-        int cantVistos = 0;
-
-        pendientes.enqueue(inicio);
-        vistos[cantVistos++] = inicio;
-
-        while (!pendientes.estaVacia()) {
-            Estacion actual = (Estacion) pendientes.dequeue();
-            resultado.insertar(actual);
-
-            ListaEnlazada conexiones = grafo.obtenerAdyacentes(actual);
-            for (Nodo n = conexiones.getCabeza(); n != null; n = n.getSiguiente()) {
-                Estacion vecino = ((Conexion) n.getDato()).getDestino();
-                if (estaExcluida(vecino, idExcluido, lineaExcluida)) continue;
-                if (!estaEn(vistos, cantVistos, vecino)) {
-                    vistos[cantVistos++] = vecino;
-                    pendientes.enqueue(vecino);
-                }
-            }
-        }
-        return resultado;
-    }
-
-    /**
-     * Recorrido DFS desde 'inicio' (recursivo o con pila propia).
-     * @param inicio estación de partida
-     * @return estaciones alcanzadas en orden de visita
-     */
+    /** Recorrido en profundidad desde la estacion de inicio. Pendiente de implementar. */
     public ListaEnlazada dfs(Estacion inicio) {
-        // TODO: pendiente (no requerido en esta entrega)
         throw new UnsupportedOperationException("DFS pendiente de implementar");
     }
 
-    // =====================================================================
-    //  HUBS (CENTRALIDAD DE GRADO)
-    // =====================================================================
-
     /**
-     * Centralidad de grado: número de conexiones directas de la estación.
-     * @param e estación a evaluar
-     * @return cantidad de conexiones directas
+     * Devuelve las k estaciones con mas conexiones (hubs), de mayor a menor.
+     * Ordena con seleccion sobre un arreglo.
      */
-    public int centralidadGrado(Estacion e) {
-        return e.getGrado();
-    }
-
-    /**
-     * Las k estaciones con mayor centralidad de grado (hubs de transbordo),
-     * ordenadas de mayor a menor grado. Usa selección parcial sobre un arreglo:
-     * en cada vuelta se coloca en su sitio la estación con más conexiones.
-     *
-     * @param k cuántos hubs devolver (si hay menos estaciones, se devuelven todas)
-     * @return ListaEnlazada de Estacion ordenada por grado descendente
-     */
-    public ListaEnlazada calcularHubs(int k) {
+    public ListaEnlazada calcularCentralidadGrado(int k) {
         int cantidad = grafo.numEstaciones();
         Estacion[] estaciones = new Estacion[cantidad];
         int i = 0;
@@ -240,26 +127,71 @@ public class AnalizadorRed {
         if (k > cantidad) k = cantidad;
         ListaEnlazada hubs = new ListaEnlazada();
         for (int pos = 0; pos < k; pos++) {
-            int mejor = pos;
+            int mayor = pos;
             for (int j = pos + 1; j < cantidad; j++) {
-                if (centralidadGrado(estaciones[j]) > centralidadGrado(estaciones[mejor])) {
-                    mejor = j;
+                if (estaciones[j].getGrado() > estaciones[mayor].getGrado()) {
+                    mayor = j;
                 }
             }
             Estacion temporal = estaciones[pos];
-            estaciones[pos] = estaciones[mejor];
-            estaciones[mejor] = temporal;
+            estaciones[pos] = estaciones[mayor];
+            estaciones[mayor] = temporal;
             hubs.insertar(estaciones[pos]);
         }
         return hubs;
     }
 
-    // =====================================================================
-    //  MÉTODOS AUXILIARES
-    // =====================================================================
+    private ListaEnlazada agruparSubredes(String idAusente, String lineaAusente) {
+        ListaEnlazada subredes = new ListaEnlazada();
+        Estacion[] asignadas = new Estacion[grafo.numEstaciones()];
+        int cantAsignadas = 0;
 
-    /** Vértice no visitado con menor distancia, o -1 si no quedan alcanzables. */
-    private int seleccionarMinimo(double[] distancia, boolean[] visitado) {
+        for (Nodo n = grafo.getEstaciones().getCabeza(); n != null; n = n.getSiguiente()) {
+            Estacion est = (Estacion) n.getDato();
+            if (estaAusente(est, idAusente, lineaAusente)) continue;
+
+            if (!estaEn(asignadas, cantAsignadas, est)) {
+                ListaEnlazada subred = recorrerBFS(est, idAusente, lineaAusente);
+                subredes.insertar(subred);
+                for (Nodo m = subred.getCabeza(); m != null; m = m.getSiguiente()) {
+                    asignadas[cantAsignadas++] = (Estacion) m.getDato();
+                }
+            }
+        }
+        return subredes;
+    }
+
+    private ListaEnlazada recorrerBFS(Estacion inicio, String idAusente, String lineaAusente) {
+        ListaEnlazada resultado = new ListaEnlazada();
+        if (inicio == null || estaAusente(inicio, idAusente, lineaAusente)) {
+            return resultado;
+        }
+
+        Cola pendientes = new Cola();
+        Estacion[] vistos = new Estacion[grafo.numEstaciones()];
+        int cantVistos = 0;
+
+        pendientes.encolar(inicio);
+        vistos[cantVistos++] = inicio;
+
+        while (!pendientes.esVacia()) {
+            Estacion actual = (Estacion) pendientes.desencolar();
+            resultado.insertar(actual);
+
+            ListaEnlazada vecinos = grafo.obtenerVecinos(actual);
+            for (Nodo n = vecinos.getCabeza(); n != null; n = n.getSiguiente()) {
+                Estacion vecino = ((Conexion) n.getDato()).getDestino();
+                if (estaAusente(vecino, idAusente, lineaAusente)) continue;
+                if (!estaEn(vistos, cantVistos, vecino)) {
+                    vistos[cantVistos++] = vecino;
+                    pendientes.encolar(vecino);
+                }
+            }
+        }
+        return resultado;
+    }
+
+    private int buscarMinimo(double[] distancia, boolean[] visitado) {
         int mejor = -1;
         double menor = Double.POSITIVE_INFINITY;
         for (int k = 0; k < distancia.length; k++) {
@@ -271,7 +203,6 @@ public class AnalizadorRed {
         return mejor;
     }
 
-    /** Posición de la estación en el arreglo (comparando por ID), o -1. */
     private int posicionDe(Estacion[] vertices, Estacion e) {
         for (int k = 0; k < vertices.length; k++) {
             if (vertices[k].equals(e)) return k;
@@ -279,7 +210,6 @@ public class AnalizadorRed {
         return -1;
     }
 
-    /** Indica si la estación está entre las primeras 'cantidad' posiciones del arreglo. */
     private boolean estaEn(Estacion[] arreglo, int cantidad, Estacion e) {
         for (int k = 0; k < cantidad; k++) {
             if (arreglo[k].equals(e)) return true;
@@ -287,14 +217,12 @@ public class AnalizadorRed {
         return false;
     }
 
-    /** True si la estación es la excluida (por ID) o pertenece a la línea excluida. */
-    private boolean estaExcluida(Estacion e, String idExcluido, String lineaExcluida) {
-        if (idExcluido != null && e.getId().equals(idExcluido)) return true;
-        return lineaExcluida != null && e.getLinea().equals(lineaExcluida);
+    private boolean estaAusente(Estacion e, String idAusente, String lineaAusente) {
+        if (idAusente != null && e.getId().equals(idAusente)) return true;
+        return lineaAusente != null && e.getLinea().equals(lineaAusente);
     }
 
-    /** Busca primero por ID (tabla hash) y, si no existe, por nombre sin distinguir mayúsculas. */
-    private Estacion buscarPorIdONombre(String texto) {
+    private Estacion buscarEstacion(String texto) {
         if (texto == null) return null;
         String clave = texto.trim();
         Estacion porId = grafo.buscarEstacion(clave);
@@ -309,7 +237,5 @@ public class AnalizadorRed {
     public GrafoPonderado getGrafo() { return grafo; }
     public VisualizadorGrafo getVisualizador() { return visualizador; }
     public void setVisualizador(VisualizadorGrafo visualizador) { this.visualizador = visualizador; }
-
-    /** @return tiempo total (minutos) de la última ruta calculada con {@link #dijkstra} */
     public double getUltimoTiempoRuta() { return ultimoTiempoRuta; }
 }
