@@ -357,4 +357,4 @@ public class AnalizadorRed {
     public VisualizadorGrafo getVisualizador() { return visualizador; }
     public void setVisualizador(VisualizadorGrafo visualizador) { this.visualizador = visualizador; }
     public double getUltimoTiempoRuta() { return ultimoTiempoRuta; }
-}
+} 
