@@ -4,423 +4,307 @@ import urbanroute.tda.ListaEnlazada;
 import urbanroute.tda.Nodo;
 
 /**
- * Implementa una tabla hash genérica para almacenar parejas clave-valor.
+ * Tabla hash genérica para almacenar parejas clave-valor.
+ * Resuelve las colisiones mediante encadenamiento separado (Separate Chaining).
  *
- * Utiliza encadenamiento separado (Separate Chaining) para resolver
- * colisiones, almacenando las entradas de cada posición en una lista enlazada.
+ * Fundamento teórico: el modelo de tablas hash con encadenamiento separado se
+ * presenta en Cormen, Leiserson, Rivest y Stein, Introduction to Algorithms,
+ * 3.ª edición, MIT Press, 2009, capítulo 11; y en Weiss, Data Structures and
+ * Algorithm Analysis in Java, 3.ª edición, Pearson, 2012, capítulo 5.
  *
- * @param <K> Tipo de dato de la clave.
- * @param <V> Tipo de dato del valor asociado a la clave.
+ * @param <K> tipo de dato de la clave.
+ * @param <V> tipo de dato del valor asociado a la clave.
  */
 public class TablaHash<K, V> {
 
-    // Capacidad inicial. Se utiliza 31 por ser un número primo que puede
-    // favorecer una distribución equilibrada de los índices.
+    /*
+     * 31 es un número primo impar. Usar una capacidad prima en la reducción
+     * modular ayuda a evitar patrones regulares de agrupamiento para ciertos
+     * conjuntos de claves; no garantiza por sí solo que no existan colisiones.
+     */
     private static final int CAPACIDAD_INICIAL = 31;
 
-    // Umbral de ocupación que activa el redimensionamiento automático.
-    private static final double FACTOR_MAXIMO = 0.75;
+    private static final double FACTOR_MAXIMO = 0.75; // Umbral de carga antes de redimensionar.
 
-
-    /**
-     * Representa una pareja clave-valor dentro de la tabla.
-     */
+    /** Representa una pareja clave-valor almacenada en una casilla. */
     private static class Entrada<K, V> {
+        private final K clave;         // Clave única de la entrada.
+        private V valor;               // Valor asociado, que puede actualizarse.
 
-        private final K clave; // Identificador de la entrada.
-        private V valor;       // Información asociada, que puede actualizarse.
-
-        /**
-         * Crea una entrada con su clave y valor.
-         */
-        Entrada(K clave, V valor) {
+        private Entrada(K clave, V valor) {
             this.clave = clave;
             this.valor = valor;
         }
 
-        public K getClave() {
+        private K getClave() {
             return clave;
         }
 
-        public V getValor() {
+        private V getValor() {
             return valor;
         }
 
-        // Actualiza el valor sin modificar la clave.
-        public void setValor(V valor) {
+        private void setValor(V valor) {
             this.valor = valor;
-        }
-
-        /**
-         * Dos entradas son iguales cuando tienen la misma clave.
-         * Esto permite buscarlas en la lista enlazada mediante una entrada temporal.
-         */
-        @Override
-        public boolean equals(Object o) {
-
-            if (this == o) return true;
-            if (!(o instanceof Entrada<?, ?>)) return false;
-
-            Entrada<?, ?> otra = (Entrada<?, ?>) o;
-
-            return clave != null && clave.equals(otra.clave);
-        }
-
-        /**
-         * Genera el código hash utilizando la clave, manteniendo
-         * la coherencia con el criterio de igualdad de equals().
-         */
-        @Override
-        public int hashCode() {
-            return clave != null ? clave.hashCode() : 0;
         }
     }
 
-
-    // Arreglo principal. Cada posición contiene una lista enlazada
-    // para almacenar las entradas que produzcan el mismo índice.
-    // Se utiliza sin parámetros porque nuestra ListaEnlazada no es genérica.
-    private ListaEnlazada[] casillas;
-
-    // Cantidad de entradas almacenadas actualmente.
-    private int tamano;
-
-    // Referencia al GrafoPonderado que utiliza esta tabla como índice.
-    private GrafoPonderado propietario;
-
-    /**
-     * Constructor predeterminado. Utiliza 31 casillas iniciales.
+    /*
+     * Java no permite crear directamente arreglos de tipos parametrizados
+     * (por ejemplo, ListaEnlazada<Entrada<K,V>>[]) sin una conversión no
+     * comprobada o una supresión de advertencias. Para evitar ambas cosas,
+     * casillas se representa como una lista fija de listas: cada lista interna
+     * es una cadena de colisiones y la lista externa mantiene las posiciones.
+     * No se utiliza Java Collections Framework.
      */
+    private ListaEnlazada<ListaEnlazada<Entrada<K, V>>> casillas;
+
+    private int capacidad;             // Cantidad de casillas de la tabla.
+    private int tamano;                // Cantidad total de entradas almacenadas.
+    private GrafoPonderado propietario; // Grafo que utiliza esta tabla como índice.
+
+    /** Constructor predeterminado: crea 31 casillas. */
     public TablaHash() {
         this(CAPACIDAD_INICIAL);
     }
 
     /**
-     * Constructor con capacidad personalizada.
-     *
-     * @param capacidad Número inicial de posiciones del arreglo.
+     * Construye la tabla con una capacidad inicial personalizada.
+     * Si la capacidad recibida es menor que 1, utiliza 31.
      */
-    public TablaHash(int capacidad) {
-
-        // Se utiliza la capacidad predeterminada si se recibe un valor inválido.
-        if (capacidad < 1) {
-            capacidad = CAPACIDAD_INICIAL;
+    public TablaHash(int capacidadInicial) {
+        if (capacidadInicial < 1) {
+            capacidadInicial = CAPACIDAD_INICIAL;
         }
 
-        // Creamos el arreglo de listas enlazadas.
-        casillas = new ListaEnlazada[capacidad];
-
-        // La tabla comienza sin elementos almacenados.
+        capacidad = capacidadInicial;
         tamano = 0;
+        casillas = crearCasillas(capacidad);
     }
-  
-    // FUNCIÓN HASH
-  
+
     /**
-     * Calcula el índice correspondiente a una clave dentro del arreglo.
+     * Calcula el índice de una clave mediante DJB2.
      *
-     * Utiliza hashCode() y Math.floorMod() para obtener una posición
-     * válida, incluso cuando el código hash es negativo.
+     * Se utiliza la recurrencia h(i + 1) = 33 * h(i) + c(i), con semilla 5381.
+     * La multiplicación por 33 se implementa como desplazamiento y suma.
+     * Referencia: Daniel J. Bernstein, algoritmo DJB2, documentado en
+     * "Hash Functions", University of York:
+     * https://www.cse.yorku.ca/~oz/hash.html
      *
-     * @param clave Clave que se desea convertir en un índice.
-     * @return Posición correspondiente dentro de casillas.
+     * Para claves genéricas se utiliza su representación String. Por ello,
+     * cada tipo K debe proporcionar un toString() estable y coherente con
+     * equals(): dos claves iguales deben producir la misma representación.
      */
+    private int calcularIndice(K clave, int capacidadTabla) {
+        String representacionClave = clave.toString();
+        int valorHash = 5381;         // Semilla inicial del algoritmo DJB2.
+
+        for (int indiceCaracter = 0;
+             indiceCaracter < representacionClave.length();
+             indiceCaracter++) {
+
+            char caracterActual = representacionClave.charAt(indiceCaracter);
+            valorHash = ((valorHash << 5) + valorHash) + caracterActual; // hash * 33 + carácter.
+        }
+
+        return Math.floorMod(valorHash, capacidadTabla);
+    }
+
+    /** Calcula el índice de una clave usando la capacidad actual. */
     private int hash(K clave) {
-        return calcularIndice(clave, casillas.length);
+        return calcularIndice(clave, capacidad);
     }
 
-    /**
-     * Calcula el índice utilizando una capacidad específica.
-     * Se utiliza durante el redimensionamiento para calcular las nuevas posiciones.
-     */
-    private int calcularIndice(K clave, int capacidad) {
-        return Math.floorMod(clave.hashCode(), capacidad);
-    }
+    /** Crea la estructura de casillas y una lista de colisiones por posición. */
+    private ListaEnlazada<ListaEnlazada<Entrada<K, V>>> crearCasillas(int cantidadCasillas) {
+        ListaEnlazada<ListaEnlazada<Entrada<K, V>>> nuevasCasillas = new ListaEnlazada<>();
 
-    // BÚSQUEDA INTERNA DE ENTRADAS
-  
-     /**
-     * Busca una entrada dentro de una casilla utilizando su clave.
-     *
-     * Se utiliza como método auxiliar para evitar repetir el mismo
-     * procedimiento en insertar(), buscar() y contiene().
-     *
-     * @param pos Posición del arreglo donde se realizará la búsqueda.
-     * @param clave Clave que se desea localizar.
-     * @return Entrada encontrada o null si no existe.
-     */
-    @SuppressWarnings("unchecked")
-    private Entrada<K, V> buscarEntrada(int pos, K clave) {
-
-        // Si no existe una lista en esa posición, no hay entradas que buscar.
-        if (casillas[pos] == null) {
-            return null;
+        for (int posicionTabla = 0; posicionTabla < cantidadCasillas; posicionTabla++) {
+            nuevasCasillas.insertar(new ListaEnlazada<>());
         }
 
-        // Creamos una entrada temporal y buscamos por igualdad de claves.
-        // La conversión es necesaria porque ListaEnlazada devuelve un objeto
-        // sin tipo específico.
-        return (Entrada<K, V>) casillas[pos].buscar(
-                new Entrada<>(clave, null)
-        );
+        return nuevasCasillas;
     }
-  
-    // INSERCIÓN Y ACTUALIZACIÓN
-  
-    /**
-     * Inserta una pareja clave-valor en la tabla.
-     * Si la clave ya existe, actualiza su valor sin duplicar la entrada.
-     *
-     * @param clave Identificador del elemento.
-     * @param valor Información que se desea almacenar.
-     */
+
+    /** Devuelve la lista de colisiones ubicada en una posición de la tabla. */
+    private ListaEnlazada<Entrada<K, V>> obtenerCasilla(int posicionTabla) {
+        return casillas.obtener(posicionTabla);
+    }
+
+    /** Busca una entrada por su clave dentro de una casilla concreta. */
+    private Entrada<K, V> buscarEntrada(int posicionTabla, K clave) {
+        ListaEnlazada<Entrada<K, V>> casillaActual = obtenerCasilla(posicionTabla);
+
+        for (Nodo<Entrada<K, V>> nodoActual = casillaActual.getCabeza();
+             nodoActual != null;
+             nodoActual = nodoActual.getSiguiente()) {
+
+            Entrada<K, V> entradaActual = nodoActual.getDato();
+            if (entradaActual.getClave().equals(clave)) {
+                return entradaActual;
+            }
+        }
+
+        return null;
+    }
+
+    /** Devuelve el índice de una entrada dentro de su lista, o -1 si no existe. */
+    private int buscarIndiceEntrada(int posicionTabla, K clave) {
+        ListaEnlazada<Entrada<K, V>> casillaActual = obtenerCasilla(posicionTabla);
+        int indiceEnCasilla = 0;
+
+        for (Nodo<Entrada<K, V>> nodoActual = casillaActual.getCabeza();
+             nodoActual != null;
+             nodoActual = nodoActual.getSiguiente()) {
+
+            if (nodoActual.getDato().getClave().equals(clave)) {
+                return indiceEnCasilla;
+            }
+
+            indiceEnCasilla++;
+        }
+
+        return -1;
+    }
+
+    /** Inserta una pareja clave-valor o actualiza el valor si la clave existe. */
     public void insertar(K clave, V valor) {
-
-        // Se rechazan claves null porque no pueden utilizarse como identificadores.
-        if (clave == null) return;
-
-        // Calculamos la posición correspondiente a la clave.
-        int pos = hash(clave);
-
-        // Si la casilla está vacía, creamos una lista para almacenar las entradas.
-        if (casillas[pos] == null) {
-            casillas[pos] = new ListaEnlazada();
+        if (clave == null) {
+            return; // Las claves null no se admiten.
         }
 
-        // Comprobamos si la clave ya se encuentra almacenada.
-        Entrada<K, V> existente = buscarEntrada(pos, clave);
+        int posicionTabla = hash(clave);
+        Entrada<K, V> entradaExistente = buscarEntrada(posicionTabla, clave);
 
-        if (existente != null) {
-
-            // Si existe, actualizamos el valor sin modificar el tamaño.
-            existente.setValor(valor);
+        if (entradaExistente != null) {
+            entradaExistente.setValor(valor);
             return;
         }
 
-        // Si la clave es nueva, insertamos su entrada e incrementamos el contador.
-        casillas[pos].insertar(new Entrada<>(clave, valor));
+        obtenerCasilla(posicionTabla).insertar(new Entrada<>(clave, valor));
         tamano++;
 
-        // Si se supera el factor de carga, aumentamos la capacidad de la tabla.
-        if ((double) tamano / casillas.length > FACTOR_MAXIMO) {
+        if ((double) tamano / capacidad > FACTOR_MAXIMO) {
             redimensionar();
         }
     }
-  
-    // BÚSQUEDA DE ELEMENTOS
-    /**
-     * Busca una clave y devuelve su valor asociado.
-     *
-     * @param clave Identificador del elemento que se desea localizar.
-     * @return Valor encontrado o null si no existe o si su valor es null.
-     */
+
+    /** Busca una clave y devuelve su valor asociado, o null si no existe. */
     public V buscar(K clave) {
+        if (clave == null) {
+            return null;
+        }
 
-        if (clave == null) return null;
-
-        int pos = hash(clave);
-
-        // Localizamos la entrada y recuperamos su valor.
-        Entrada<K, V> encontrada = buscarEntrada(pos, clave);
-
-        return encontrada != null ? encontrada.getValor() : null;
+        int posicionTabla = hash(clave);
+        Entrada<K, V> entradaEncontrada = buscarEntrada(posicionTabla, clave);
+        return entradaEncontrada == null ? null : entradaEncontrada.getValor();
     }
 
-
-    /**
-     * Alias de buscar(), utilizado para mantener compatibilidad
-     * con las llamadas que empleen el nombre obtener().
-     *
-     * @param clave Identificador del elemento.
-     * @return Valor asociado a la clave.
-     */
+    /** Alias de buscar(), conservado por compatibilidad con el código del proyecto. */
     public V obtener(K clave) {
         return buscar(clave);
     }
 
-    // ELIMINACIÓN DE ELEMENTOS
-
-    /**
-     * Elimina una entrada utilizando su clave.
-     *
-     * @param clave Identificador del elemento que se desea eliminar.
-     * @return true si se eliminó; false si la clave no existía.
-     */
+    /** Elimina la entrada asociada a la clave indicada. */
     public boolean eliminar(K clave) {
-
-        if (clave == null) return false;
-
-        int pos = hash(clave);
-
-        // No es posible eliminar elementos de una casilla vacía.
-        if (casillas[pos] == null) {
+        if (clave == null) {
             return false;
         }
 
-        // La lista enlazada localiza y elimina la entrada correspondiente.
-        boolean eliminada = casillas[pos].eliminar(
-                new Entrada<>(clave, null)
-        );
+        int posicionTabla = hash(clave);
+        int indiceEnCasilla = buscarIndiceEntrada(posicionTabla, clave);
 
-        // El tamaño solamente disminuye cuando la eliminación es exitosa.
-        if (eliminada) {
-            tamano--;
+        if (indiceEnCasilla < 0) {
+            return false;
         }
 
-        return eliminada;
+        obtenerCasilla(posicionTabla).eliminarEn(indiceEnCasilla);
+        tamano--;
+        return true;
     }
 
-    // REDIMENSIONAMIENTO
-
     /**
-     * Aumenta la capacidad de la tabla cuando se supera el factor de carga.
-     *
-     * La nueva capacidad se calcula como capacidad actual * 2 + 1.
-     * Posteriormente, se reorganizan las entradas mediante re-hashing.
+     * Duplica aproximadamente la capacidad y redistribuye las entradas.
+     * El contador tamano no cambia porque solo se trasladan entradas existentes.
      */
-    @SuppressWarnings("unchecked")
     private void redimensionar() {
-
-        // Utilizamos long para evitar desbordamientos durante el cálculo.
-        long calculoNuevaCapacidad = (long) casillas.length * 2 + 1;
+        long calculoNuevaCapacidad = (long) capacidad * 2 + 1;
 
         if (calculoNuevaCapacidad > Integer.MAX_VALUE) {
-            throw new IllegalStateException(
-                    "La tabla alcanzó el límite de capacidad."
-            );
+            throw new IllegalStateException("La tabla alcanzó el límite de capacidad.");
         }
 
         int nuevaCapacidad = (int) calculoNuevaCapacidad;
+        ListaEnlazada<ListaEnlazada<Entrada<K, V>>> nuevasCasillas = crearCasillas(nuevaCapacidad);
 
-        // Creamos el nuevo arreglo con la capacidad ampliada.
-        ListaEnlazada[] nuevas = new ListaEnlazada[nuevaCapacidad];
+        for (int posicionTabla = 0; posicionTabla < capacidad; posicionTabla++) {
+            ListaEnlazada<Entrada<K, V>> casillaActual = obtenerCasilla(posicionTabla);
 
-        // Recorremos todas las casillas del arreglo anterior.
-        for (int i = 0; i < casillas.length; i++) {
+            for (Nodo<Entrada<K, V>> nodoActual = casillaActual.getCabeza();
+                 nodoActual != null;
+                 nodoActual = nodoActual.getSiguiente()) {
 
-            if (casillas[i] == null) continue;
-
-            // Recorremos los nodos de cada lista enlazada.
-            for (Nodo n = casillas[i].getCabeza();
-                 n != null;
-                 n = n.getSiguiente()) {
-
-                // Recuperamos la entrada almacenada en el nodo.
-                Entrada<K, V> e = (Entrada<K, V>) n.getDato();
-
-                // Recalculamos su posición utilizando la nueva capacidad.
-                int nuevaPos = calcularIndice(e.getClave(), nuevaCapacidad);
-
-                // Creamos la lista si la nueva casilla está vacía.
-                if (nuevas[nuevaPos] == null) {
-                    nuevas[nuevaPos] = new ListaEnlazada();
-                }
-
-                // Reubicamos la entrada sin modificar el contador de elementos.
-                nuevas[nuevaPos].insertar(e);
+                Entrada<K, V> entradaActual = nodoActual.getDato();
+                int nuevoIndice = calcularIndice(entradaActual.getClave(), nuevaCapacidad);
+                nuevasCasillas.obtener(nuevoIndice).insertar(entradaActual);
             }
         }
 
-        // Sustituimos el arreglo anterior por el nuevo.
-        casillas = nuevas;
+        casillas = nuevasCasillas;
+        capacidad = nuevaCapacidad;
     }
 
-    // RECUPERACIÓN DE ELEMENTOS
+    /** Devuelve una lista enlazada con todos los valores almacenados. */
+    public ListaEnlazada<V> obtenerTodas() {
+        ListaEnlazada<V> todosLosValores = new ListaEnlazada<>();
 
-    /**
-     * Obtiene todos los valores almacenados en la tabla.
-     *
-     * @return Lista enlazada con los valores de todas las entradas.
-     */
-    @SuppressWarnings("unchecked")
-    public ListaEnlazada obtenerTodas() {
+        for (int posicionTabla = 0; posicionTabla < capacidad; posicionTabla++) {
+            ListaEnlazada<Entrada<K, V>> casillaActual = obtenerCasilla(posicionTabla);
 
-        ListaEnlazada todas = new ListaEnlazada();
+            for (Nodo<Entrada<K, V>> nodoActual = casillaActual.getCabeza();
+                 nodoActual != null;
+                 nodoActual = nodoActual.getSiguiente()) {
 
-        // Recorremos todas las casillas para recuperar sus entradas.
-        for (int i = 0; i < casillas.length; i++) {
-
-            if (casillas[i] == null) continue;
-
-            // Recorremos cada lista y agregamos los valores almacenados.
-            for (Nodo n = casillas[i].getCabeza();
-                 n != null;
-                 n = n.getSiguiente()) {
-
-                Entrada<K, V> entrada = (Entrada<K, V>) n.getDato();
-
-                todas.insertar(entrada.getValor());
+                todosLosValores.insertar(nodoActual.getDato().getValor());
             }
         }
 
-        return todas;
+        return todosLosValores;
     }
 
-    /**
-     * Comprueba si una clave está almacenada en la tabla.
-     *
-     * A diferencia de buscar(), permite verificar la existencia de una clave
-     * aunque el valor asociado sea null.
-     *
-     * @param clave Identificador que se desea comprobar.
-     * @return true si la clave existe; false en caso contrario.
-     */
+    /** Comprueba si una clave existe, incluso cuando su valor asociado es null. */
     public boolean contiene(K clave) {
+        if (clave == null) {
+            return false;
+        }
 
-        if (clave == null) return false;
-
-        int pos = hash(clave);
-
-        return buscarEntrada(pos, clave) != null;
+        int posicionTabla = hash(clave);
+        return buscarEntrada(posicionTabla, clave) != null;
     }
 
-    // INFORMACIÓN Y LIMPIEZA
-
-    /**
-     * Devuelve la cantidad de elementos almacenados.
-     *
-     * @return Número actual de entradas.
-     */
+    /** Devuelve la cantidad de entradas almacenadas. */
     public int obtenerTamano() {
         return tamano;
     }
 
-    /**
-     * Devuelve la cantidad de casillas disponibles en el arreglo.
-     *
-     * @return Capacidad actual de la tabla hash.
-     */
+    /** Devuelve la capacidad actual de la tabla. */
     public int obtenerCapacidad() {
-        return casillas.length;
+        return capacidad;
     }
 
-    /**
-     * Elimina todos los elementos y restaura la capacidad inicial.
-     */
+    /** Elimina las entradas y restaura la capacidad inicial. */
     public void limpiar() {
-
-        // Creamos un arreglo nuevo para descartar las entradas anteriores.
-        casillas = new ListaEnlazada[CAPACIDAD_INICIAL];
-
+        capacidad = CAPACIDAD_INICIAL;
+        casillas = crearCasillas(capacidad);
         tamano = 0;
     }
 
-    // PROPIETARIO
-
-    /**
-     * Devuelve el grafo asociado a esta tabla hash.
-     *
-     * @return Referencia al GrafoPonderado propietario.
-     */
+    /** Devuelve el grafo asociado a esta tabla hash. */
     public GrafoPonderado getPropietario() {
         return propietario;
     }
 
-    /**
-     * Establece el grafo que utiliza esta tabla como índice.
-     *
-     * @param propietario Grafo al que pertenece esta tabla.
-     */
+    /** Establece el grafo que utiliza esta tabla como índice. */
     public void setPropietario(GrafoPonderado propietario) {
         this.propietario = propietario;
     }
