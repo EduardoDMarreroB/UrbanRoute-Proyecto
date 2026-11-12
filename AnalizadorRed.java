@@ -9,352 +9,544 @@ import urbanroute.tda.Cola;
 import urbanroute.tda.ListaEnlazada;
 import urbanroute.tda.Nodo;
 
-
 /**
- * Algoritmos sobre el grafo: ruta minima (Dijkstra), subredes aisladas (BFS)
- * y estaciones con mas conexiones (centralidad de grado).
+ * Analiza la red de transporte mediante algoritmos de grafos.
+ *
+ * <p>Incluye el cálculo de rutas mínimas con Dijkstra, la identificación de
+ * componentes conexos mediante búsqueda en anchura (BFS) y en profundidad (DFS),
+ * y la obtención de estaciones con mayor grado de conexión.</p>
+ *
+ * <p>Los algoritmos siguen los modelos clásicos descritos en Cormen et al.,
+ * <i>Introduction to Algorithms</i>, 3.ª edición, MIT Press, 2009.</p>
  */
 public class AnalizadorRed {
-    private GrafoPonderado grafo;
-    private VisualizadorGrafo visualizador;
-    private double ultimoTiempoRuta;
 
+    private GrafoPonderado grafo;              // Grafo sobre el que se ejecutan los algoritmos.
+    private VisualizadorGrafo visualizador;    // Componente gráfico asociado al analizador.
+    private double ultimoTiempoRuta;            // Tiempo total de la última ruta calculada correctamente.
+
+    /**
+     * Crea un analizador para el grafo indicado y registra la relación entre ambos.
+     *
+     * @param grafo grafo de transporte que será analizado.
+     */
     public AnalizadorRed(GrafoPonderado grafo) {
+        if (grafo == null) {
+            throw new IllegalArgumentException("El grafo no puede ser null.");
+        }
         this.grafo = grafo;
         this.grafo.setAnalizador(this);
     }
 
- /**
-     * Calcula la ruta de menor tiempo entre dos estaciones (id o nombre).
-     * Devuelve la lista de estaciones del origen al destino, o null si no hay camino.
-     * El tiempo total queda en getUltimoTiempoRuta().
+    /**
+     * Calcula la ruta de menor tiempo entre dos estaciones identificadas por su
+     * código o nombre, mediante el algoritmo de Dijkstra.
+     *
+     * @param origen identificador o nombre de la estación de origen.
+     * @param destino identificador o nombre de la estación de destino.
+     * @return lista de estaciones desde el origen hasta el destino, o {@code null}
+     *         si alguna estación no existe o no hay una ruta disponible.
+     * @see #getUltimoTiempoRuta()
      */
-    public ListaEnlazada dijkstra(String origen, String destino) {
-        Estacion estOrigen = buscarEstacion(origen);
-        Estacion estDestino = buscarEstacion(destino);
-        if (estOrigen == null || estDestino == null) {
+    public ListaEnlazada<Estacion> dijkstra(String origen, String destino) {
+        Estacion estacionOrigen = buscarEstacion(origen);
+        Estacion estacionDestino = buscarEstacion(destino);
+        if (estacionOrigen == null || estacionDestino == null) {
             return null;
         }
 
-        int cantidad = grafo.numEstaciones();
-        if (cantidad == 0) return null;
-
-        Estacion[] vertices = new Estacion[cantidad];
-        TablaHash mapaIndices = new TablaHash(); 
-       
-        /**llenamos el arreglo vertices e indexamos la tablahash(mapaindices)
-       para poder consultar el numero de indice en cualquier estacion
-        
-        */
-        int i = 0;
-        for (Nodo nodo = grafo.getEstaciones().getCabeza(); nodo != null; nodo = nodo.getSiguiente()) {
-            Estacion est = (Estacion) nodo.getDato();
-            vertices[i] = est;
-            mapaIndices.insertar(est.getId(), i); 
-            i++;
-        }
-
-       /**convertimos las estaciones origen y destino a coordenadas numericas 
-        * porque es mas facil comprar numeros y el programa correra mas rapido.
-        */
-        Integer idxOrigen = (Integer) mapaIndices.obtener(estOrigen.getId());
-        Integer idxDestino = (Integer) mapaIndices.obtener(estDestino.getId());
-
-        if (idxOrigen == null || idxDestino == null) {
+        int cantidadEstaciones = grafo.numEstaciones();
+        if (cantidadEstaciones == 0) {
             return null;
         }
-        
-        int posOrigen = idxOrigen;
-        int posDestino = idxDestino;
-  /**
-   * almacenamos el acumulado del menor tiempo de viaje conocido
-   * guardamos el indice de la estacion previa en la que llegamos
-   * true o false para saber si la estacion fue procesada 
-   */
-        double[] distancia = new double[cantidad];
-        int[] previo = new int[cantidad];
-        boolean[] visitado = new boolean[cantidad];
-/**
- * asumimos que al empezar no hay ruta hacia ningun nodo asi cualquier tiempo real 
- * encontrado sera menor que Infinito
- * indicamos que ningun nodo tiene antecesor definifo
- * el tiempo consumido para ir desde el origen hacia si mismo es 0
- */
-        for (int k = 0; k < cantidad; k++) {
-            distancia[k] = Double.POSITIVE_INFINITY;
-            previo[k] = -1;
-        }
-        distancia[posOrigen] = 0;
 
-     // haremos como maximo tantas iteraciones como estaciones   
-        // pero no procesará todas las estaciones si no es necesario (early exits implementados abajo).
-        for (int paso = 0; paso < cantidad; paso++) {
-            //usamos el principio (greedy) de Dijkstra: 
-            //explora siempre primero la estación más cercana disponible de las que no han sido visitadas.
-            // u sera la "estación actual" en la que estamos parados para explorar sus salidas.
-            
-            int u = buscarMinimo(distancia, visitado);
-           
-            // Si retorna -1 significa que ya no quedan nodos alcanzables. 
-            //Las estaciones restantes son "islas aisladas" 
-            // en buscarMinimo se entendera mejor por que -1
-            // por lo que detenemos el algoritmo por eficiencia.
-            if (u == -1) {
+        // Se utiliza un arreglo para trabajar con posiciones numéricas durante Dijkstra.
+        Estacion[] vertices = new Estacion[cantidadEstaciones];
+        // La tabla relaciona el ID de cada estación con su posición en el arreglo.
+        TablaHash<String, Integer> mapaIndices = new TablaHash<>();
+
+        int cantidadCopiada = 0;
+        for (Nodo<Estacion> nodoEstacion = grafo.getEstaciones().getCabeza();
+             nodoEstacion != null;
+             nodoEstacion = nodoEstacion.getSiguiente()) {
+            Estacion estacionActual = nodoEstacion.getDato();
+            vertices[cantidadCopiada] = estacionActual;
+            mapaIndices.insertar(estacionActual.getId(), cantidadCopiada);
+            cantidadCopiada++;
+        }
+
+        // Se traducen los identificadores de origen y destino a posiciones del arreglo.
+        Integer indiceOrigen = mapaIndices.obtener(estacionOrigen.getId());
+        Integer indiceDestino = mapaIndices.obtener(estacionDestino.getId());
+        if (indiceOrigen == null || indiceDestino == null) {
+            return null;
+        }
+
+        int posicionOrigen = indiceOrigen;
+        int posicionDestino = indiceDestino;
+
+        // distancia almacena el menor tiempo conocido; previo guarda el antecesor.
+        double[] distancia = new double[cantidadEstaciones];
+        int[] previo = new int[cantidadEstaciones];
+        boolean[] visitado = new boolean[cantidadEstaciones];
+
+        for (int posicionTabla = 0; posicionTabla < cantidadEstaciones; posicionTabla++) {
+            distancia[posicionTabla] = Double.POSITIVE_INFINITY;
+            previo[posicionTabla] = -1;
+        }
+        distancia[posicionOrigen] = 0.0;
+
+        // Dijkstra procesa primero la estación no visitada con menor distancia acumulada.
+        for (int paso = 0; paso < cantidadEstaciones; paso++) {
+            int posicionActual = buscarMinimo(distancia, visitado);
+
+            // Si no existe una posición alcanzable, las estaciones restantes están desconectadas.
+            if (posicionActual == -1) {
                 break;
             }
-           // para garantizar que el nodo u no vuelva a ser procesado en iteraciones futuras.
-            visitado[u] = true;
-            
-            // Si el nodo extraído es nuestro destino, ya encontramos 
-            // la ruta más corta garantizada. Detenemos el cálculo del resto del grafo.
-            if (u == posDestino) {
-                break; 
+
+            visitado[posicionActual] = true;
+
+            // Al llegar al destino, su distancia mínima ya está determinada.
+            if (posicionActual == posicionDestino) {
+                break;
             }
-    //  Obtenemos la lista de conexiones de la estación vertices[u]
-    //Examinamos todas las salidas directas disponibles desde la estación actual u
-    
-            ListaEnlazada vecinos = grafo.obtenerVecinos(vertices[u]);
-            for (Nodo nc = vecinos.getCabeza(); nc != null; nc = nc.getSiguiente()) {
-                // c sera  objeto conexion que es la que une la estacion actual con la vecina
-                Conexion c = (Conexion) nc.getDato();
-                
-                /** usaremos v para guardar el indice numerico de la estacion vecina
-                * verificaremos si fue procesada
-                * registraremos la distancia y predecesores 
-                * Si el camino hacia esa estación vecina es más rápido,
-                * se actualiza su tiempo acumulado en distancia[v] y se guarda la estación de origen en previo[v].
-                */
-                Integer vInteger = (Integer) mapaIndices.obtener(c.getDestino().getId());
-                if (vInteger == null) continue;
-                
-                int v = vInteger;
-                if (visitado[v]) continue;
-                // actualizamos la tabla cada vez que encontremos un atajo o camino mas rapido
-                //hacia la estacion v
-                double nuevaDistancia = distancia[u] + c.getTiempo();
-                if (nuevaDistancia < distancia[v]) {
-                    distancia[v] = nuevaDistancia;
-                    previo[v] = u;
+
+            // Se examinan las conexiones que salen de la estación actual.
+            ListaEnlazada<Conexion> conexiones = grafo.obtenerVecinos(vertices[posicionActual]);
+            for (Nodo<Conexion> nodoConexion = conexiones.getCabeza(); nodoConexion != null;
+                 nodoConexion = nodoConexion.getSiguiente()) {
+                Conexion conexionActual = nodoConexion.getDato();
+
+                // Se obtiene la posición de la estación destino de esta conexión.
+                Integer indiceVecino = mapaIndices.obtener(conexionActual.getDestino().getId());
+                if (indiceVecino == null) {
+                    continue;
+                }
+
+                int posicionVecino = indiceVecino;
+                if (visitado[posicionVecino]) {
+                    continue;
+                }
+
+                // Se actualiza la ruta si pasar por la conexión produce un tiempo menor.
+                double nuevaDistancia = distancia[posicionActual] + conexionActual.getTiempo();
+                if (nuevaDistancia < distancia[posicionVecino]) {
+                    distancia[posicionVecino] = nuevaDistancia;
+                    previo[posicionVecino] = posicionActual;
                 }
             }
         }
 
-        if (distancia[posDestino] == Double.POSITIVE_INFINITY) {
-            return null; // No existe un camino entre el origen y el destino
+        if (distancia[posicionDestino] == Double.POSITIVE_INFINITY) {
+            return null;
         }
-        
-        ultimoTiempoRuta = distancia[posDestino];
 
-        // Reconstruimos trazando hacia atrás mediante los 'predecesores', pero
-        // usando 'insertarInicio' para asegurar que la lista mantenga el orden 
-        // cronológico real y no quede invertida.
-        
-        ListaEnlazada ruta = new ListaEnlazada();
-        int actual = posDestino;
-        while (actual != -1) {
-            ruta.insertarInicio(vertices[actual]);
-            actual = previo[actual];
+        ultimoTiempoRuta = distancia[posicionDestino];
+
+        // Se reconstruye la ruta desde el destino hasta el origen y se inserta al inicio.
+        ListaEnlazada<Estacion> ruta = new ListaEnlazada<>();
+        int posicionRuta = posicionDestino;
+        while (posicionRuta != -1) {
+            ruta.insertarInicio(vertices[posicionRuta]);
+            posicionRuta = previo[posicionRuta];
         }
-        
+
         return ruta;
     }
+
     /**
-     * Agrupa las estaciones en subredes (componentes conexos) usando BFS.
-     * Devuelve una lista donde cada elemento es la ListaEnlazada de estaciones de una subred.
+     * Agrupa todas las estaciones en componentes conexos mediante un recorrido BFS.
+     *
+     * @return lista de subredes; cada subred contiene sus estaciones en orden de visita.
      */
-    public ListaEnlazada detectarSubredesBFS() {
-        return agruparSubredes(null, null);
+    public ListaEnlazada<ListaEnlazada<Estacion>> detectarSubredesBFS() {
+        return agruparSubredes(null, null, false);
     }
 
-    /** Igual que detectarSubredesBFS pero sin tomar en cuenta una estacion (simula su baja). */
-    public ListaEnlazada detectarSubredesSinEstacion(String idEstacion) {
-        return agruparSubredes(idEstacion, null);
+    /**
+     * Agrupa todas las estaciones en componentes conexos mediante un recorrido DFS.
+     *
+     * @return lista de subredes; cada subred contiene sus estaciones en orden de visita.
+     */
+    public ListaEnlazada<ListaEnlazada<Estacion>> detectarSubredesDFS() {
+        return agruparSubredes(null, null, true);
     }
 
-    /** Igual que detectarSubredesBFS pero sin tomar en cuenta una linea completa (simula su baja). */
-    public ListaEnlazada detectarSubredesSinLinea(String linea) {
-        return agruparSubredes(null, linea);
+    /**
+     * Calcula las subredes que quedarían al excluir una estación de la red.
+     *
+     * @param idEstacion identificador de la estación que se excluirá.
+     * @return lista de componentes conexos sin la estación indicada.
+     */
+    public ListaEnlazada<ListaEnlazada<Estacion>> detectarSubredesSinEstacion(String idEstacion) {
+        return agruparSubredes(idEstacion, null, false);
     }
 
-    /** Recorrido en anchura desde la estacion de inicio. Devuelve las estaciones en orden de visita. */
-    public ListaEnlazada bfs(Estacion inicio) {
+    /**
+     * Calcula las subredes mediante DFS al excluir una estación de la red.
+     *
+     * @param idEstacion identificador de la estación que se excluirá.
+     * @return lista de componentes conexos sin la estación indicada.
+     */
+    public ListaEnlazada<ListaEnlazada<Estacion>> detectarSubredesSinEstacionDFS(String idEstacion) {
+        return agruparSubredes(idEstacion, null, true);
+    }
+
+    /**
+     * Calcula las subredes que quedarían al excluir todas las conexiones de una línea.
+     *
+     * @param linea nombre o identificador de la línea que se excluirá.
+     * @return lista de componentes conexos sin la línea indicada.
+     */
+    public ListaEnlazada<ListaEnlazada<Estacion>> detectarSubredesSinLinea(String linea) {
+        return agruparSubredes(null, linea, false);
+    }
+
+    /**
+     * Calcula las subredes mediante DFS al excluir todas las conexiones de una línea.
+     *
+     * @param linea nombre o identificador de la línea que se excluirá.
+     * @return lista de componentes conexos sin la línea indicada.
+     */
+    public ListaEnlazada<ListaEnlazada<Estacion>> detectarSubredesSinLineaDFS(String linea) {
+        return agruparSubredes(null, linea, true);
+    }
+
+    /**
+     * Realiza un recorrido en anchura (BFS) desde la estación indicada.
+     *
+     * @param inicio estación desde la que comienza el recorrido.
+     * @return estaciones alcanzables en el orden en que son visitadas.
+     */
+    public ListaEnlazada<Estacion> bfs(Estacion inicio) {
         return recorrerBFS(inicio, null, null);
     }
 
-    /** Recorrido en profundidad desde la estacion de inicio. Pendiente de implementar. */
-    public ListaEnlazada dfs(Estacion inicio) {
-        throw new UnsupportedOperationException("DFS pendiente de implementar");
-    }
-  /**
-     * Devuelve las k estaciones con mas conexiones (hubs), de mayor a menor.
-     * Ordena con seleccion sobre un arreglo.
+    /**
+     * Realiza un recorrido en profundidad (DFS) desde la estación indicada.
+     * Utiliza un arreglo como pila para evitar depender de Java Collections Framework.
+     *
+     * @param inicio estación desde la que comienza el recorrido.
+     * @return estaciones alcanzables en el orden en que son visitadas.
      */
-    public ListaEnlazada calcularCentralidadGrado(int k) {
-       /** 
-        * para no crear arreglos de tamano 0 o relizar calculos que no sean
-       necesasrios si la red de transporte no tiene estaciones cargadas
-       * */
-        int cantidad = grafo.numEstaciones();
-        if (cantidad == 0) {
-            return new ListaEnlazada();
+    public ListaEnlazada<Estacion> dfs(Estacion inicio) {
+        return recorrerDFS(inicio, null, null);
+    }
+
+    /**
+     * Obtiene las {@code k} estaciones con mayor grado de conexión, ordenadas de mayor a menor.
+     * Utiliza el algoritmo de ordenamiento por selección.
+     *
+     * @param k cantidad máxima de estaciones que se desea obtener.
+     * @return lista con hasta {@code k} estaciones de mayor grado; si {@code k} es negativo,
+     *         devuelve una lista vacía.
+     */
+    public ListaEnlazada<Estacion> calcularCentralidadGrado(int k) {
+        int cantidadEstaciones = grafo.numEstaciones();
+        ListaEnlazada<Estacion> hubs = new ListaEnlazada<>();
+
+        if (cantidadEstaciones == 0 || k <= 0) {
+            return hubs;
         }
 
-        /** 
-         * 1. Pasamos la lista de estaciones a un arreglo plano
-         * para poder entrar y ordenar elementos mediante pocisiones de un arreglo
-         * usando: i,pos,j
-         */
-        Estacion[] estaciones = new Estacion[cantidad];
-        int i = 0;
-        for (Nodo n = grafo.getEstaciones().getCabeza(); n != null; n = n.getSiguiente()) {
-            estaciones[i++] = (Estacion) n.getDato();
+        // Se copia la lista a un arreglo para aplicar ordenamiento por selección.
+        Estacion[] estacionesOrdenadas = new Estacion[cantidadEstaciones];
+        int cantidadCopiada = 0;
+        for (Nodo<Estacion> nodoEstacion = grafo.getEstaciones().getCabeza();
+             nodoEstacion != null;
+             nodoEstacion = nodoEstacion.getSiguiente()) {
+            estacionesOrdenadas[cantidadCopiada++] = nodoEstacion.getDato();
         }
 
-        // Ajustar k si es mayor al numero de estaciones disponibles
-        if (k > cantidad) {
-            k = cantidad;
-        }
-        if (k < 0) {
-            k = 0;
-        }
+        // No se pueden devolver más estaciones de las que existen en el grafo.
+        int limiteResultados = Math.min(k, cantidadEstaciones);
 
-        ListaEnlazada hubs = new ListaEnlazada();
+        // En cada pasada se coloca en la posición actual la estación con mayor grado restante.
+        for (int posicionActual = 0; posicionActual < limiteResultados; posicionActual++) {
+            int posicionMayor = posicionActual;
 
-        // 2. Algoritmo de Ordenamiento por Seleccion (Top K)
-        for (int pos = 0; pos < k; pos++) {
-            
-            // Validacion explicita de limites recomendada por el profesor
-            if (pos >= 0 && pos < estaciones.length) {
-                
-                int mayor = pos; // Asumimos inicialmente que la estacion en 'pos' es la de mayor grado
-
-                // Buscar el elemento con el grado estrictamente mayor en el resto del arreglo
-                for (int j = pos + 1; j < estaciones.length; j++) {
-                    // Validaciones de seguridad de limites para los indices j y mayor
-                    if (j >= 0 && j < estaciones.length && mayor >= 0 && mayor < estaciones.length) {
-                        // Se evalua si el elemento actual supera al candidato 'mayor'
-                        if (estaciones[j].getGrado() > estaciones[mayor].getGrado()) {
-                            mayor = j;
-                        }
-                    }
+            for (int posicionCandidata = posicionActual + 1;
+                 posicionCandidata < cantidadEstaciones;
+                 posicionCandidata++) {
+                if (estacionesOrdenadas[posicionCandidata].getGrado()
+                        > estacionesOrdenadas[posicionMayor].getGrado()) {
+                    posicionMayor = posicionCandidata;
                 }
-
-                // 3. Logica de SWAP (Intercambio) transparente con variable auxiliar 'temp'
-                // Solo realizamos el intercambio si encontramos un candidato con mayor grado
-                if (mayor != pos && mayor >= 0 && mayor < estaciones.length) {
-                    // PASO A: Guardar temporalmente el elemento actual en la variable auxiliar
-                    Estacion temp = estaciones[pos];
-                    
-                    // PASO B: Mover el elemento de mayor grado a la posicion actual 'pos'
-                    estaciones[pos] = estaciones[mayor];
-                    
-                    // PASO C: Colocar el elemento guardado en 'temp' en la posicion donde estaba el mayor
-                    estaciones[mayor] = temp;
-                }
-
-                // Insertar el hub ya ordenado en la lista resultado
-                hubs.insertar(estaciones[pos]);
             }
+
+            // Se intercambian las estaciones si se encontró una de mayor grado.
+            if (posicionMayor != posicionActual) {
+                Estacion estacionTemporal = estacionesOrdenadas[posicionActual];
+                estacionesOrdenadas[posicionActual] = estacionesOrdenadas[posicionMayor];
+                estacionesOrdenadas[posicionMayor] = estacionTemporal;
+            }
+
+            hubs.insertar(estacionesOrdenadas[posicionActual]);
         }
 
         return hubs;
     }
 
-    private ListaEnlazada agruparSubredes(String idAusente, String lineaAusente) {
-        ListaEnlazada subredes = new ListaEnlazada();
-        Estacion[] asignadas = new Estacion[grafo.numEstaciones()];
-        int cantAsignadas = 0;
+    /**
+     * Agrupa las estaciones en componentes conexos, omitiendo opcionalmente una estación
+     * o una línea.
+     *
+     * @param idAusente identificador de la estación que se omitirá, o {@code null}.
+     * @param lineaAusente línea que se omitirá, o {@code null}.
+     * @return lista de componentes conexos resultantes.
+     */
+    private ListaEnlazada<ListaEnlazada<Estacion>> agruparSubredes(
+            String idAusente, String lineaAusente, boolean utilizarDFS) {
+        ListaEnlazada<ListaEnlazada<Estacion>> subredes = new ListaEnlazada<>();
+        Estacion[] estacionesAsignadas = new Estacion[grafo.numEstaciones()];
+        int cantidadAsignadas = 0;
 
-        for (Nodo n = grafo.getEstaciones().getCabeza(); n != null; n = n.getSiguiente()) {
-            Estacion est = (Estacion) n.getDato();
-            if (estaAusente(est, idAusente, lineaAusente)) continue;
+        for (Nodo<Estacion> nodoEstacion = grafo.getEstaciones().getCabeza();
+             nodoEstacion != null;
+             nodoEstacion = nodoEstacion.getSiguiente()) {
+            Estacion estacionActual = nodoEstacion.getDato();
+            if (estaAusente(estacionActual, idAusente, lineaAusente)) {
+                continue;
+            }
 
-            if (!estaEn(asignadas, cantAsignadas, est)) {
-                ListaEnlazada subred = recorrerBFS(est, idAusente, lineaAusente);
-                subredes.insertar(subred);
-                for (Nodo m = subred.getCabeza(); m != null; m = m.getSiguiente()) {
-                    asignadas[cantAsignadas++] = (Estacion) m.getDato();
+            if (!estaEn(estacionesAsignadas, cantidadAsignadas, estacionActual)) {
+                // Se aplica el algoritmo elegido para obtener el componente conexo actual.
+                ListaEnlazada<Estacion> subredActual = utilizarDFS
+                        ? recorrerDFS(estacionActual, idAusente, lineaAusente)
+                        : recorrerBFS(estacionActual, idAusente, lineaAusente);
+                subredes.insertar(subredActual);
+
+                // Se registran las estaciones ya agrupadas para no repetir componentes.
+                for (Nodo<Estacion> nodoSubred = subredActual.getCabeza(); nodoSubred != null;
+                     nodoSubred = nodoSubred.getSiguiente()) {
+                    estacionesAsignadas[cantidadAsignadas++] = nodoSubred.getDato();
                 }
             }
         }
+
         return subredes;
     }
 
-    private ListaEnlazada recorrerBFS(Estacion inicio, String idAusente, String lineaAusente) {
-        ListaEnlazada resultado = new ListaEnlazada();
+    /**
+     * Ejecuta BFS desde una estación, respetando las exclusiones indicadas.
+     *
+     * @param inicio estación inicial del recorrido.
+     * @param idAusente identificador de la estación que se omitirá, o {@code null}.
+     * @param lineaAusente línea que se omitirá, o {@code null}.
+     * @return estaciones visitadas durante el recorrido.
+     */
+    private ListaEnlazada<Estacion> recorrerBFS(
+            Estacion inicio, String idAusente, String lineaAusente) {
+        ListaEnlazada<Estacion> resultado = new ListaEnlazada<>();
         if (inicio == null || estaAusente(inicio, idAusente, lineaAusente)) {
             return resultado;
         }
 
-        Cola pendientes = new Cola();
-        Estacion[] vistos = new Estacion[grafo.numEstaciones()];
-        int cantVistos = 0;
+        Cola<Estacion> pendientes = new Cola<>();
+        Estacion[] estacionesVisitadas = new Estacion[grafo.numEstaciones()];
+        int cantidadVisitadas = 0;
 
         pendientes.encolar(inicio);
-        vistos[cantVistos++] = inicio;
+        estacionesVisitadas[cantidadVisitadas++] = inicio;
 
+        // BFS visita primero las estaciones más cercanas al punto de inicio.
         while (!pendientes.esVacia()) {
-            Estacion actual = (Estacion) pendientes.desencolar();
-            resultado.insertar(actual);
+            Estacion estacionActual = pendientes.desencolar();
+            resultado.insertar(estacionActual);
 
-            ListaEnlazada vecinos = grafo.obtenerVecinos(actual);
-            for (Nodo n = vecinos.getCabeza(); n != null; n = n.getSiguiente()) {
-                Estacion vecino = ((Conexion) n.getDato()).getDestino();
-                if (estaAusente(vecino, idAusente, lineaAusente)) continue;
-                if (!estaEn(vistos, cantVistos, vecino)) {
-                    vistos[cantVistos++] = vecino;
-                    pendientes.encolar(vecino);
+            ListaEnlazada<Conexion> conexiones = grafo.obtenerVecinos(estacionActual);
+            for (Nodo<Conexion> nodoConexion = conexiones.getCabeza(); nodoConexion != null;
+                 nodoConexion = nodoConexion.getSiguiente()) {
+                Estacion estacionVecina = nodoConexion.getDato().getDestino();
+                if (estaAusente(estacionVecina, idAusente, lineaAusente)) {
+                    continue;
+                }
+
+                if (!estaEn(estacionesVisitadas, cantidadVisitadas, estacionVecina)) {
+                    estacionesVisitadas[cantidadVisitadas++] = estacionVecina;
+                    pendientes.encolar(estacionVecina);
                 }
             }
         }
+
         return resultado;
     }
 
-    private int buscarMinimo(double[] distancia, boolean[] visitado) {
-        int mejor = -1;
-        double menor = Double.POSITIVE_INFINITY;
-        for (int k = 0; k < distancia.length; k++) {
-            if (!visitado[k] && distancia[k] < menor) {
-                menor = distancia[k];
-                mejor = k;
+    /**
+     * Ejecuta DFS desde una estación, respetando las exclusiones indicadas.
+     * La pila se implementa con un arreglo cuyo tamaño máximo es el número de estaciones.
+     *
+     * @param inicio estación inicial del recorrido.
+     * @param idAusente identificador de la estación que se omitirá, o {@code null}.
+     * @param lineaAusente línea que se omitirá, o {@code null}.
+     * @return estaciones visitadas durante el recorrido en profundidad.
+     */
+    private ListaEnlazada<Estacion> recorrerDFS(
+            Estacion inicio, String idAusente, String lineaAusente) {
+        ListaEnlazada<Estacion> resultado = new ListaEnlazada<>();
+        if (inicio == null || estaAusente(inicio, idAusente, lineaAusente)
+                || grafo.buscarEstacion(inicio.getId()) == null) {
+            return resultado;
+        }
+
+        // Cada conexión puede generar una inserción en la pila; por eso se reserva
+        // espacio para todas las conexiones y la estación inicial.
+        Estacion[] pila = new Estacion[grafo.numConexiones() + 1];
+        int cima = -1;
+
+        // Este arreglo registra las estaciones que ya fueron procesadas.
+        Estacion[] estacionesVisitadas = new Estacion[grafo.numEstaciones()];
+        int cantidadVisitadas = 0;
+
+        pila[++cima] = inicio;
+
+        while (cima >= 0) {
+            Estacion estacionActual = pila[cima--];
+
+            // Una estación puede estar varias veces pendiente por conexiones distintas.
+            // Se procesa solo la primera vez que se extrae de la pila.
+            if (estaEn(estacionesVisitadas, cantidadVisitadas, estacionActual)) {
+                continue;
+            }
+
+            estacionesVisitadas[cantidadVisitadas++] = estacionActual;
+            resultado.insertar(estacionActual);
+
+            ListaEnlazada<Conexion> conexiones = grafo.obtenerVecinos(estacionActual);
+            for (Nodo<Conexion> nodoConexion = conexiones.getCabeza(); nodoConexion != null;
+                 nodoConexion = nodoConexion.getSiguiente()) {
+                Estacion estacionVecina = nodoConexion.getDato().getDestino();
+                if (estaAusente(estacionVecina, idAusente, lineaAusente)
+                        || estaEn(estacionesVisitadas, cantidadVisitadas, estacionVecina)) {
+                    continue;
+                }
+
+                // La pila es LIFO: la última conexión insertada se explora primero.
+                pila[++cima] = estacionVecina;
             }
         }
-        return mejor;
+
+        return resultado;
     }
 
-    private int posicionDe(Estacion[] vertices, Estacion e) {
-        for (int k = 0; k < vertices.length; k++) {
-            if (vertices[k].equals(e)) return k;
+    /**
+     * Busca la posición de menor distancia que todavía no haya sido visitada.
+     *
+     * @param distancias arreglo de distancias acumuladas.
+     * @param visitadas indica qué posiciones ya fueron procesadas.
+     * @return posición con menor distancia disponible, o {@code -1} si no queda ninguna.
+     */
+    private int buscarMinimo(double[] distancias, boolean[] visitadas) {
+        int mejorPosicion = -1;
+        double menorDistancia = Double.POSITIVE_INFINITY;
+
+        for (int posicionTabla = 0; posicionTabla < distancias.length; posicionTabla++) {
+            if (!visitadas[posicionTabla] && distancias[posicionTabla] < menorDistancia) {
+                menorDistancia = distancias[posicionTabla];
+                mejorPosicion = posicionTabla;
+            }
         }
-        return -1;
+
+        return mejorPosicion;
     }
 
-    private boolean estaEn(Estacion[] arreglo, int cantidad, Estacion e) {
-        for (int k = 0; k < cantidad; k++) {
-            if (arreglo[k].equals(e)) return true;
+    /**
+     * Comprueba si una estación ya aparece en las primeras posiciones ocupadas del arreglo.
+     *
+     * @param estaciones arreglo de estaciones.
+     * @param cantidad cantidad de posiciones ocupadas que deben revisarse.
+     * @param estacionBuscada estación que se desea localizar.
+     * @return {@code true} si la estación ya está en el arreglo; de lo contrario, {@code false}.
+     */
+    private boolean estaEn(Estacion[] estaciones, int cantidad, Estacion estacionBuscada) {
+        for (int posicionTabla = 0; posicionTabla < cantidad; posicionTabla++) {
+            if (estaciones[posicionTabla].equals(estacionBuscada)) {
+                return true;
+            }
         }
         return false;
     }
 
-    private boolean estaAusente(Estacion e, String idAusente, String lineaAusente) {
-        if (idAusente != null && e.getId().equals(idAusente)) return true;
-        return lineaAusente != null && e.getLinea().equals(lineaAusente);
+    /**
+     * Determina si una estación debe excluirse del análisis actual.
+     *
+     * @param estacion estación que se evaluará.
+     * @param idAusente identificador de estación excluida, o {@code null}.
+     * @param lineaAusente línea excluida, o {@code null}.
+     * @return {@code true} si coincide con alguna exclusión.
+     */
+    private boolean estaAusente(Estacion estacion, String idAusente, String lineaAusente) {
+        if (idAusente != null && estacion.getId().equals(idAusente)) {
+            return true;
+        }
+        return lineaAusente != null && estacion.getLinea().equals(lineaAusente);
     }
 
+    /**
+     * Busca una estación primero por identificador y después por nombre.
+     * La comparación por nombre no distingue entre mayúsculas y minúsculas.
+     *
+     * @param texto identificador o nombre que se desea buscar.
+     * @return estación encontrada, o {@code null} si no existe.
+     */
     private Estacion buscarEstacion(String texto) {
-        if (texto == null) return null;
-        String clave = texto.trim();
-        Estacion porId = grafo.buscarEstacion(clave);
-        if (porId != null) return porId;
-        for (Nodo n = grafo.getEstaciones().getCabeza(); n != null; n = n.getSiguiente()) {
-            Estacion e = (Estacion) n.getDato();
-            if (e.getNombre() != null && e.getNombre().equalsIgnoreCase(clave)) return e;
+        if (texto == null) {
+            return null;
         }
+
+        String clave = texto.trim();
+        Estacion estacionPorId = grafo.buscarEstacion(clave);
+        if (estacionPorId != null) {
+            return estacionPorId;
+        }
+
+        for (Nodo<Estacion> nodoEstacion = grafo.getEstaciones().getCabeza();
+             nodoEstacion != null;
+             nodoEstacion = nodoEstacion.getSiguiente()) {
+            Estacion estacionActual = nodoEstacion.getDato();
+            if (estacionActual.getNombre() != null
+                    && estacionActual.getNombre().equalsIgnoreCase(clave)) {
+                return estacionActual;
+            }
+        }
+
         return null;
     }
 
-    public GrafoPonderado getGrafo() { return grafo; }
-    public VisualizadorGrafo getVisualizador() { return visualizador; }
-    public void setVisualizador(VisualizadorGrafo visualizador) { this.visualizador = visualizador; }
-    public double getUltimoTiempoRuta() { return ultimoTiempoRuta; }
-} 
+    /**
+     * Devuelve el grafo asociado a este analizador.
+     *
+     * @return grafo que analiza esta instancia.
+     */
+    public GrafoPonderado getGrafo() {
+        return grafo;
+    }
+
+    /**
+     * Devuelve el visualizador gráfico asociado al analizador.
+     *
+     * @return visualizador asociado, o {@code null} si todavía no se ha establecido.
+     */
+    public VisualizadorGrafo getVisualizador() {
+        return visualizador;
+    }
+
+    /**
+     * Establece el visualizador gráfico asociado al analizador.
+     *
+     * @param visualizador componente que representa gráficamente la red.
+     */
+    public void setVisualizador(VisualizadorGrafo visualizador) {
+        this.visualizador = visualizador;
+    }
+
+    /**
+     * Devuelve el tiempo total de la última ruta calculada correctamente con Dijkstra.
+     *
+     * @return tiempo acumulado de la última ruta exitosa.
+     */
+    public double getUltimoTiempoRuta() {
+        return ultimoTiempoRuta;
+    }
+}
