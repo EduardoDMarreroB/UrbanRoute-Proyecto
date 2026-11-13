@@ -1,30 +1,40 @@
 package urbanroute.tda;
 
-// Nodo genérico de una lista simplemente enlazada
+// Representa un nodo o eslabon de una lista simple
 public class Nodo<T> {
+    private T dato; // Dato guardado en este nodo
+    
+    // Enlace al proximo nodo de la lista (es null si es el ultimo)
+    private Nodo<T> siguiente; 
 
-    private T dato; // Dato almacenado en este nodo
-    private Nodo<T> siguiente; // Referencia al siguiente nodo de la lista, null si es el último
 
-    // Crea un nodo con el dato indicado y sin sucesor
+// Crea un nodo guardando el dato y sin apuntar a nadie mas todavia
     public Nodo(T dato) {
-        this.dato = dato; // guardamos el elemento
-        this.siguiente = null; // Se asume que no hay siguiente
+        this.dato = dato; // Guardamos el elemento recibido
+        this.siguiente = null; // Por ahora asume que no hay siguiente nodo
     }
 
+
+// Obtiene el dato que esta guardado en el nodo
     public T getDato() {
-        return dato; // Retorna el contenido actual del nodo
+        return dato;
     }
 
+
+// Cambia el dato guardado en el nodo por uno nuevo
     public void setDato(T dato) {
-        this.dato = dato; // actualizamos el dato
+        this.dato = dato; // Actualizamos el dato
     }
 
+
+// Obtiene el nodo que le sigue a este
     public Nodo<T> getSiguiente() {
-        return siguiente; // Retorna el enlace al próximo nodo
+        return siguiente;
     }
 
+
+// Conecta este nodo con el nodo que le va a seguir en la lista
     public void setSiguiente(Nodo<T> siguiente) {
-        this.siguiente = siguiente; // Conectamos este nodo con el sucesor
+        this.siguiente = siguiente; // Hacemos la conexion
     }
 }
