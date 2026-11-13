@@ -506,7 +506,6 @@ public class VisualizadorGrafo {
         // Controla eventos de cierre para liberar recursos correctamente
         nuevaVentana.addWindowListener(new WindowAdapter() {
 
-            @Override
             public void windowClosed(WindowEvent e) {
 
                 if (frame == nuevaVentana) {
@@ -535,7 +534,6 @@ public class VisualizadorGrafo {
         ultimoPunto = null;
     }
 
-
     /**
      * Cierra la ventana independiente del visualizador y libera el Viewer.
      */
@@ -552,6 +550,8 @@ public class VisualizadorGrafo {
 
         cerrarViewer();
     }
+}
+
 
     /**
      * Construye la leyenda visual con los colores de cada línea y los transbordos.
@@ -688,7 +688,6 @@ public class VisualizadorGrafo {
 
         MouseAdapter adaptador = new MouseAdapter() {
 
-            @Override
             public void mouseWheelMoved(MouseWheelEvent e) {
 
                 // Controla el acercamiento o alejamiento con la rueda del ratón
@@ -699,7 +698,6 @@ public class VisualizadorGrafo {
                 }
             }
 
-            @Override
             public void mousePressed(MouseEvent e) {
 
                 // Captura el punto inicial al arrastrar con botón derecho o central
@@ -710,12 +708,10 @@ public class VisualizadorGrafo {
                 }
             }
 
-            @Override
             public void mouseReleased(MouseEvent e) {
                 ultimoPunto = null; // Libera el punto al soltar el botón
             }
 
-            @Override
             public void mouseDragged(MouseEvent e) {
 
                 if (ultimoPunto == null || view == null) {
