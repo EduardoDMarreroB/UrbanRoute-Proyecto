@@ -3,20 +3,25 @@ package urbanroute.tda;
 /**
  * Cola con estructura FIFO hecha con nodos. Se usa para el recorrido BFS.
  */
-public class Cola {
-    private Nodo frente;
-    private Nodo fin;
+public class Cola<T> {
+    private Nodo<T> frente;
+    private Nodo<T> fin;
     private int tamano;
 
+     /**
+     * Crea una cola sin elementos (vacía).
+     */
     public Cola() {
         frente = null;
         fin = null;
         tamano = 0;
     }
 
-    /** Agrega un dato al final de la cola. */
-    public void encolar(Object dato) {
-        Nodo nuevo = new Nodo(dato);
+    /** 
+     * Agrega un dato al final de la cola. 
+     */
+    public void encolar(T dato) {
+        Nodo<T> nuevo = new Nodo<>(dato);
         if (fin == null) {
             frente = nuevo;
             fin = nuevo;
@@ -27,12 +32,14 @@ public class Cola {
         tamano++;
     }
 
-    /** Saca y devuelve el dato del frente. Devuelve null si la cola esta vacia. */
-    public Object desencolar() {
+    /** Saca y devuelve el dato del frente. 
+     *  Si la cola está vacía, retorna null. 
+     */
+    public T desencolar() {
         if (frente == null) {
             return null;
         }
-        Object dato = frente.getDato();
+        T dato = frente.getDato();
         frente = frente.getSiguiente();
         if (frente == null) {
             fin = null;
@@ -41,12 +48,20 @@ public class Cola {
         return dato;
     }
 
-    /** Devuelve el dato del frente sin sacarlo. */
-    public Object verFrente() {
+    /** 
+     * Devuelve el dato del frente sin sacarlo.
+     */
+    public T verFrente() {
         return frente == null ? null : frente.getDato();
     }
 
+    /**
+     * Comprueba si la cola está vacía.
+     */
     public boolean esVacia() { return frente == null; }
 
+    /**
+     * Obtiene la cantidad de elementos almacenados en la cola.
+     */
     public int obtenerTamano() { return tamano; }
 }
