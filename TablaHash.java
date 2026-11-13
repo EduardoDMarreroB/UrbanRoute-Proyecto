@@ -3,461 +3,313 @@ package urbanroute.modelo;
 import urbanroute.tda.ListaEnlazada;
 import urbanroute.tda.Nodo;
 
-/**
- * Implementa una tabla hash propia para almacenar e indexar estaciones
- * mediante su identificador único.
- *
- * Utiliza un arreglo de listas enlazadas para resolver las colisiones
- * mediante encadenamiento separado.
- *
- * Cada entrada contiene una clave y la estación correspondiente.
- * La posición se calcula mediante una función de dispersión propia.
- *
- * La capacidad aumenta cuando el factor de carga supera el 75 %,
- * para mantener controlado el número de colisiones.
- */
+// Tabla propia para guardar y buscar estaciones usando su ID
 public class TablaHash {
-
-    /** Capacidad inicial del arreglo. */
-    private static final int CAPACIDAD_INICIAL = 101;
-
-    /** Factor de carga máximo antes de ampliar la tabla. */
+    
+    private static final int CAPACIDAD_INICIAL = 101; // Tamaño base 
+    
+    // Que tan llena puede estar la tabla antes de agrandarla 
     private static final double FACTOR_CARGA_MAXIMO = 0.75;
 
-    /**
-     * Representa una entrada almacenada en la tabla.
-     *
-     * La clave es inmutable para evitar modificaciones que puedan
-     * alterar la ubicación de la entrada dentro del arreglo.
-     */
+
+    // Guarda el par de datos: el ID y la estacion 
     private static class Entrada {
+        private final String clave; // ID de la estacion
+        private Estacion valor; // La estacion guardada
 
-        /** Identificador de la estación. */
-        private final String clave;
 
-        /** Estación asociada al identificador. */
-        private Estacion valor;
-
-        /**
-         * Crea una entrada con su clave y estación correspondiente.
-         *
-         * @param clave Identificador de la estación.
-         * @param valor Estación que se almacenará.
-         */
+// Crea el registro con la clave y la estacion        
         private Entrada(String clave, Estacion valor) {
             this.clave = clave;
             this.valor = valor;
         }
     }
 
-    /** Arreglo de listas enlazadas que almacena las entradas. */
+// Arreglo de listas para manejar colisiones: si dos IDs diferentes obtienen 
+// el mismo numero de posicion, ambas estaciones se guardan en esta lista
     private ListaEnlazada<Entrada>[] casillas;
 
-    /** Cantidad de estaciones almacenadas. */
-    private int tamano;
+    private int tamano; // Cantidad de estaciones guardadas en total
 
-    /**
-     * Crea una tabla hash vacía con 101 casillas.
-     */
+
+// Crea una tabla vacia empezando con 101 espacios
     public TablaHash() {
         casillas = crearCasillas(CAPACIDAD_INICIAL);
-        tamano = 0;
+        tamano = 0; // Empezamos en cero
     }
 
-    /**
-     * Crea el arreglo de listas enlazadas.
-     *
-     * Se utiliza un arreglo nativo de Java porque no se pueden crear
-     * directamente arreglos de tipos genéricos parametrizados.
-     *
-     * @param capacidad Cantidad de casillas del arreglo.
-     * @return Arreglo preparado para almacenar listas de entradas.
-     */
+
+// Crea el arreglo de listas saltandose la restriccion de tipos de Java
     @SuppressWarnings("unchecked")
     private ListaEnlazada<Entrada>[] crearCasillas(int capacidad) {
-        return (ListaEnlazada<Entrada>[])
-                new ListaEnlazada<?>[capacidad];
+        return (ListaEnlazada<Entrada>[]) new ListaEnlazada<?>[capacidad];
     }
 
-    /**
-     * Calcula la posición de una clave dentro del arreglo.
-     *
-     * Utiliza una función polinómica que procesa los caracteres
-     * del identificador y aplica el módulo de la capacidad actual.
-     *
-     * El valor intermedio se mantiene reducido para evitar
-     * desbordamientos durante el cálculo.
-     *
-     * @param clave Identificador de la estación.
-     * @return Posición correspondiente dentro del arreglo.
-     */
-    private int hash(String clave) {
 
+// Calcula la posicion en el arreglo mediante una funcion hash    
+    private int hash(String clave) {
         long resultado = 0;
 
+        // Sumamos los valores de cada letra para sacar un numero unico
         for (int i = 0; i < clave.length(); i++) {
-            resultado = (31L * resultado + clave.charAt(i))
+            resultado = (31L * resultado + clave.charAt(i)) 
                     % casillas.length;
         }
 
         return (int) resultado;
     }
 
-    /**
-     * Busca una entrada dentro de una casilla.
-     *
-     * Recorre la lista enlazada correspondiente y compara directamente
-     * los identificadores almacenados.
-     *
-     * No utiliza equals() ni hashCode() en la clase Entrada.
-     *
-     * @param posicion Posición del arreglo donde se buscará.
-     * @param clave Identificador que se desea localizar.
-     * @return Entrada encontrada o null si no existe.
-     */
-    private Entrada buscarEntrada(int posicion, String clave) {
 
-        if (casillas[posicion] == null) {
+// Busca si un ID ya esta guardado dentro de una posicion especifica
+    private Entrada buscarEntrada(int posicion, String clave) {
+        if (casillas[posicion] == null) { // Si no hay ninguna lista ahi
             return null;
         }
 
-        for (Nodo<Entrada> nodoActual = casillas[posicion].getCabeza();
-             nodoActual != null;
-             nodoActual = nodoActual.getSiguiente()) {
+        // Recorremos la lista de ese lugar para ver si esta el ID
+        for (Nodo<Entrada> actual = casillas[posicion].getCabeza();
+             actual != null;
+             actual = actual.getSiguiente()) {
 
-            Entrada entrada = nodoActual.getDato();
+            Entrada entrada = actual.getDato();
 
-            if (entrada.clave.equals(clave)) {
+            if (entrada.clave.equals(clave)) { // Si lo encontramos
                 return entrada;
             }
         }
 
-        return null;
+        return null; // No estaba guardado ahi
     }
 
-    /**
-     * Inserta una estación utilizando su identificador como clave.
-     *
-     * Si la clave ya existe, reemplaza la estación almacenada.
-     * Si no existe, crea una nueva entrada y la agrega a la lista
-     * enlazada correspondiente.
-     *
-     * Antes de insertar una nueva entrada, comprueba si el factor
-     * de carga supera el límite establecido.
-     *
-     * @param clave Identificador de la estación.
-     * @param valor Estación que se desea almacenar.
-     * @throws IllegalArgumentException Si la clave es nula o está vacía,
-     * si la estación es nula o si la clave no coincide con su ID.
-     */
-    public void insertar(String clave, Estacion valor) {
 
-        if (clave == null || clave.trim().isEmpty()) {
+// Guarda una estacion por ID. Si la tabla esta muy llena, la hace mas grande
+    public void insertar(String clave, Estacion valor) {
+        if (clave == null || clave.trim().isEmpty()) { // Validamos el ID
             throw new IllegalArgumentException(
-                    "El identificador no puede ser nulo ni estar vacío."
+                    "El identificador no puede estar vacio."
             );
         }
 
-        if (valor == null) {
+        if (valor == null) { // Validamos la estacion
             throw new IllegalArgumentException(
                     "La estación no puede ser nula."
             );
         }
 
-        String claveNormalizada = clave.trim();
+        String claveLimpia = clave.trim();
 
-        if (!claveNormalizada.equals(valor.getId())) {
+        if (!claveLimpia.equals(valor.getId())) { // Tienen que coincidir
             throw new IllegalArgumentException(
-                    "La clave debe coincidir con el ID de la estación."
+                    "La clave debe ser igual al ID de la estación."
             );
         }
 
-        int posicion = hash(claveNormalizada);
+        int posicion = hash(claveLimpia);
 
-        // Si la clave ya existe, se actualiza su valor.
-        Entrada existente = buscarEntrada(posicion, claveNormalizada);
+        // Buscamos si ya estaba guardada para solo actualizarle los datos
+        Entrada existente = buscarEntrada(posicion, claveLimpia);
 
         if (existente != null) {
-            existente.valor = valor;
+            existente.valor = valor; // Actualizamos los datos
             return;
         }
 
-        // Se amplía la tabla si la nueva inserción supera el factor de carga.
+        // Si se va a llenar mucho (mas del 75%), la agrandamos primero
         if ((tamano + 1.0) / casillas.length > FACTOR_CARGA_MAXIMO) {
             redimensionar();
-            posicion = hash(claveNormalizada);
+            posicion = hash(claveLimpia); // Calculamos la posicion otra vez
         }
 
-        if (casillas[posicion] == null) {
+        if (casillas[posicion] == null) { // Si no hay lista, la creamos
             casillas[posicion] = new ListaEnlazada<>();
         }
 
-        casillas[posicion].insertar(
-                new Entrada(claveNormalizada, valor)
-        );
-
-        tamano++;
+        // Guardamos el nuevo dato en la lista de esa posicion
+        casillas[posicion].insertar(new Entrada(claveLimpia, valor));
+        tamano++; // Sumamos uno al contador total
     }
 
-    /**
-     * Busca una estación mediante su identificador.
-     *
-     * Calcula la posición correspondiente y revisa únicamente
-     * la lista enlazada de esa casilla.
-     *
-     * @param clave Identificador de la estación.
-     * @return Estación encontrada o null si no existe.
-     */
-    public Estacion buscar(String clave) {
 
+// Busca una estacion usando su ID y te la devuelve
+    public Estacion buscar(String clave) {
         if (clave == null || clave.trim().isEmpty()) {
             return null;
         }
 
-        String claveNormalizada = clave.trim();
-
-        int posicion = hash(claveNormalizada);
-
-        Entrada entrada = buscarEntrada(posicion, claveNormalizada);
-
-        return entrada == null ? null : entrada.valor;
+        String claveLimpia = clave.trim();
+        int posicion = hash(claveLimpia);
+        
+        Entrada entrada = buscarEntrada(posicion, claveLimpia);
+        
+        // Si la encontro devuelve la estacion, si no devuelve null
+        return entrada == null ? null : entrada.valor; 
     }
 
-    /**
-     * Obtiene una estación mediante su identificador.
-     *
-     * Conserva este método como alternativa de consulta para
-     * mantener la compatibilidad con otras clases del proyecto.
-     *
-     * @param clave Identificador de la estación.
-     * @return Estación encontrada o null si no existe.
-     */
+
+// Obtiene una estacion mediante su identificador    
     public Estacion obtener(String clave) {
         return buscar(clave);
     }
 
-    /**
-     * Elimina una estación mediante su identificador.
-     *
-     * Primero localiza la entrada y después elimina de la lista
-     * la misma referencia encontrada.
-     *
-     * Si la lista queda vacía, se libera la casilla correspondiente.
-     *
-     * @param clave Identificador de la estación que se desea eliminar.
-     * @return true si se eliminó la estación; false si no existía.
-     */
-    public boolean eliminar(String clave) {
 
+// Borra una estacion usando su ID
+    public boolean eliminar(String clave) {
         if (clave == null || clave.trim().isEmpty()) {
             return false;
         }
 
-        String claveNormalizada = clave.trim();
+        String claveLimpia = clave.trim();
+        int posicion = hash(claveLimpia);
 
-        int posicion = hash(claveNormalizada);
-
-        if (casillas[posicion] == null) {
+        if (casillas[posicion] == null) { // Si no hay nada en esa posicion
             return false;
         }
 
-        Entrada existente = buscarEntrada(posicion, claveNormalizada);
+        // Buscamos si el dato realmente existe ahi dentro
+        Entrada existente = buscarEntrada(posicion, claveLimpia);
 
         if (existente == null) {
-            return false;
+            return false; // No estaba guardada
         }
 
-        /*
-         * Se elimina la misma entrada encontrada.
-         * La ListaEnlazada reconoce que ambas referencias
-         * corresponden al mismo objeto.
-         */
+        // Le pedimos a la lista que borre ese dato exacto
         boolean eliminada = casillas[posicion].eliminar(existente);
 
         if (eliminada) {
-            tamano--;
+            tamano--; // Restamos del contador total
 
-            if (casillas[posicion].esVacia()) {
-                casillas[posicion] = null;
+            if (casillas[posicion].esVacia()) { // Si la lista quedo vacia
+                casillas[posicion] = null; // Borramos la lista para hacer espacio
             }
         }
 
         return eliminada;
     }
 
-    /**
-     * Obtiene todas las estaciones almacenadas.
-     *
-     * Recorre las casillas del arreglo y sus respectivas listas
-     * enlazadas, agregando las estaciones a una nueva lista.
-     *
-     * @return Lista enlazada con todas las estaciones registradas.
-     */
-    public ListaEnlazada<Estacion> obtenerTodas() {
 
+// Recorre toda la tabla y te da una lista con todas las estaciones juntas
+    public ListaEnlazada<Estacion> obtenerTodas() {
         ListaEnlazada<Estacion> todas = new ListaEnlazada<>();
 
         for (int i = 0; i < casillas.length; i++) {
-
-            if (casillas[i] == null) {
+            if (casillas[i] == null) { // Saltamos los espacios vacios
                 continue;
             }
 
-            for (Nodo<Entrada> nodoActual = casillas[i].getCabeza();
-                 nodoActual != null;
-                 nodoActual = nodoActual.getSiguiente()) {
+            // Recorremos cada elemento de la lista en esta casilla
+            for (Nodo<Entrada> actual = casillas[i].getCabeza();
+                 actual != null;
+                 actual = actual.getSiguiente()) {
 
-                todas.insertar(nodoActual.getDato().valor);
+                todas.insertar(actual.getDato().valor); // La agregamos
             }
         }
 
         return todas;
     }
 
-    /**
-     * Comprueba si existe una estación con el identificador indicado.
-     *
-     * @param clave Identificador que se desea consultar.
-     * @return true si existe una entrada con esa clave;
-     * false en caso contrario.
-     */
-    public boolean contiene(String clave) {
 
+// Te dice si una estacion con ese ID ya esta guardada en la tabla
+    public boolean contiene(String clave) {
         if (clave == null || clave.trim().isEmpty()) {
             return false;
         }
 
-        String claveNormalizada = clave.trim();
+        String claveLimpia = clave.trim();
+        int posicion = hash(claveLimpia);
 
-        int posicion = hash(claveNormalizada);
-
-        return buscarEntrada(posicion, claveNormalizada) != null;
+        // Retorna true si la encontro, false si dio null
+        return buscarEntrada(posicion, claveLimpia) != null;
     }
 
-    /**
-     * Obtiene la cantidad de estaciones almacenadas.
-     *
-     * @return Número total de estaciones.
-     */
+
+// Te dice cuantas estaciones hay guardadas en total
     public int obtenerTamano() {
         return tamano;
     }
 
-    /**
-     * Obtiene la capacidad actual del arreglo.
-     *
-     * @return Cantidad de casillas disponibles.
-     */
+
+// Te dice de que tamaño es el arreglo actualmente
     public int obtenerCapacidad() {
         return casillas.length;
     }
 
-    /**
-     * Calcula el factor de carga de la tabla.
-     *
-     * Representa la relación entre la cantidad de entradas
-     * almacenadas y la capacidad disponible.
-     *
-     * @return Factor de carga actual.
-     */
+
+// Calcula que porcentaje de la tabla esta ocupada
     public double obtenerFactorCarga() {
         return (double) tamano / casillas.length;
     }
 
-    /**
-     * Aumenta la capacidad del arreglo y redistribuye sus entradas.
-     *
-     * La nueva capacidad se calcula buscando un número primo
-     * aproximadamente dos veces mayor que el anterior.
-     *
-     * Las estaciones y sus referencias se conservan.
-     */
+
+// Agranda la tabla al doble (buscando un numero primo) y reubica todo
     private void redimensionar() {
-
         ListaEnlazada<Entrada>[] anteriores = casillas;
-
+        
+        // Buscamos un tamaño nuevo que sea numero primo
         int nuevaCapacidad = siguientePrimo(anteriores.length * 2);
 
-        casillas = crearCasillas(nuevaCapacidad);
+        casillas = crearCasillas(nuevaCapacidad); // Creamos la nueva tabla
 
+        // Recorremos la tabla vieja para pasar todo a la nueva
         for (int i = 0; i < anteriores.length; i++) {
-
             if (anteriores[i] == null) {
                 continue;
             }
 
-            for (Nodo<Entrada> nodoActual = anteriores[i].getCabeza();
-                 nodoActual != null;
-                 nodoActual = nodoActual.getSiguiente()) {
+            for (Nodo<Entrada> actual = anteriores[i].getCabeza();
+                 actual != null;
+                 actual = actual.getSiguiente()) {
 
-                Entrada entrada = nodoActual.getDato();
+                Entrada entrada = actual.getDato();
+                int nuevaPos = hash(entrada.clave); // Calculamos nueva ubicacion
 
-                int nuevaPosicion = hash(entrada.clave);
-
-                if (casillas[nuevaPosicion] == null) {
-                    casillas[nuevaPosicion] = new ListaEnlazada<>();
+                if (casillas[nuevaPos] == null) {
+                    casillas[nuevaPos] = new ListaEnlazada<>();
                 }
 
-                casillas[nuevaPosicion].insertar(entrada);
+                casillas[nuevaPos].insertar(entrada); // Pasamos el dato
             }
         }
     }
 
-    /**
-     * Busca el siguiente número primo igual o mayor al recibido.
-     *
-     * @param numero Número a partir del cual se inicia la búsqueda.
-     * @return Siguiente número primo.
-     */
-    private int siguientePrimo(int numero) {
 
+// Busca un numero primo que sea igual o mayor al numero que le pases
+    private int siguientePrimo(int numero) {
         int candidato = numero;
 
         if (candidato <= 2) {
             return 2;
         }
 
-        if (candidato % 2 == 0) {
+        if (candidato % 2 == 0) { // Si es par, le sumamos uno para hacerlo impar
             candidato++;
         }
 
-        while (!esPrimo(candidato)) {
+        while (!esPrimo(candidato)) { // Mientras no sea primo, sigue buscando
             candidato += 2;
         }
 
         return candidato;
     }
 
-    /**
-     * Comprueba si un número es primo.
-     *
-     * @param numero Número que se desea comprobar.
-     * @return true si es primo; false en caso contrario.
-     */
-    private boolean esPrimo(int numero) {
 
+// Verifica si un numero entero dado es primo    
+    private boolean esPrimo(int numero) {
         if (numero < 2) {
             return false;
         }
 
-        for (int divisor = 2;
-             divisor <= numero / divisor;
-             divisor++) {
-
-            if (numero % divisor == 0) {
+        // Probamos hasta la mitad del numero para que la busqueda sea rapida
+        for (int divisor = 2; divisor <= numero / divisor; divisor++) {
+            if (numero % divisor == 0) { // Si se puede dividir por otro numero
                 return false;
             }
         }
-
         return true;
     }
 
-    /**
-     * Elimina todas las entradas de la tabla.
-     *
-     * Restablece el arreglo a su capacidad inicial
-     * y establece el tamaño en cero.
-     */
+
+// Borra absolutamente todo y reinicia la tabla a como estaba al principio
     public void limpiar() {
         casillas = crearCasillas(CAPACIDAD_INICIAL);
         tamano = 0;
