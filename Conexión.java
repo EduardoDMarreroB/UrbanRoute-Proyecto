@@ -1,191 +1,117 @@
 package urbanroute.modelo;
 
-/**
- * Representa una conexión entre dos estaciones de la red de transporte.
- *
- * Cada conexión almacena una estación de origen, una estación de destino
- * y el tiempo de recorrido expresado en minutos.
- *
- * Dos conexiones son iguales cuando tienen el mismo origen
- * y el mismo destino, independientemente de su tiempo.
- *
- * @author UrbanRoute
- */
+// Representa un viaje o ruta directa que une a dos estaciones
 public class Conexion {
+    private final Estacion origen; // Estacion desde donde arranca el viaje
+    private final Estacion destino; // Estacion a la que llega el viaje
+    private double tiempo; // Minutos que tarda en hacer ese recorrido
 
-    /** Estación desde la que comienza la conexión. */
-    private final Estacion origen;
 
-    /** Estación hacia la que se dirige la conexión. */
-    private final Estacion destino;
-
-    /** Tiempo de recorrido entre las estaciones, expresado en minutos. */
-    private double tiempo;
-
-    /**
-     * Construye una conexión entre dos estaciones.
-     *
-     * @param origen Estación de origen.
-     * @param destino Estación de destino.
-     * @param tiempo Tiempo de recorrido en minutos.
-     * @throws IllegalArgumentException Si alguna estación es null
-     * o el tiempo es negativo, infinito o NaN.
-     */
+// Crea una conexion entre dos estaciones indicando el tiempo que tardan
     public Conexion(Estacion origen, Estacion destino, double tiempo) {
-
-        if (origen == null || destino == null) {
+        if (origen == null || destino == null) { // Si nos falta una estacion
             throw new IllegalArgumentException(
                     "Las estaciones no pueden ser nulas."
             );
         }
 
-        validarTiempo(tiempo);
+        validarTiempo(tiempo); // Revisamos que el tiempo tenga sentido
 
         this.origen = origen;
         this.destino = destino;
         this.tiempo = tiempo;
     }
 
-    /**
-     * Obtiene la estación de origen.
-     *
-     * @return Estación de origen.
-     */
+
+// Te dice de que estacion sale esta conexion
     public Estacion getOrigen() {
         return origen;
     }
 
-    /**
-     * Obtiene la estación de destino.
-     *
-     * @return Estación de destino.
-     */
+
+// Te dice a que estacion llega esta conexion
     public Estacion getDestino() {
         return destino;
     }
 
-    /**
-     * Obtiene el tiempo de recorrido de la conexión.
-     *
-     * @return Tiempo de recorrido expresado en minutos.
-     */
+
+// Te dice cuantos minutos dura el viaje
     public double getTiempo() {
         return tiempo;
     }
 
-    /**
-     * Modifica el tiempo de recorrido de la conexión.
-     *
-     * @param tiempo Nuevo tiempo de recorrido en minutos.
-     * @throws IllegalArgumentException Si el tiempo es negativo,
-     * infinito o NaN.
-     */
+
+// Cambia el tiempo que dura el viaje por uno nuevo
     public void setTiempo(double tiempo) {
-        validarTiempo(tiempo);
+        validarTiempo(tiempo); // Volvemos a revisar que no pongan locuras
         this.tiempo = tiempo;
     }
 
-    /**
-     * Comprueba que el tiempo de recorrido sea válido.
-     *
-     * El tiempo debe ser un número finito y no negativo.
-     * Esta condición permite utilizar la conexión correctamente
-     * en el algoritmo de Dijkstra.
-     *
-     * @param tiempo Tiempo que se desea validar.
-     * @throws IllegalArgumentException Si el tiempo no es válido.
-     */
+
+// Revisa que el tiempo no sea negativo, infinito o un error matematico
     private void validarTiempo(double tiempo) {
-
-        if (Double.isNaN(tiempo)
-                || Double.isInfinite(tiempo)
+        // Si el tiempo es un error, es infinito o es menor a cero
+        if (Double.isNaN(tiempo) || Double.isInfinite(tiempo)
                 || tiempo < 0) {
-
+            
             throw new IllegalArgumentException(
                     "El tiempo debe ser finito y no negativo."
             );
         }
     }
 
-    /**
-     * Obtiene la estación situada en el extremo opuesto
-     * al de la estación recibida.
-     *
-     * @param estacion Estación desde la que se consulta la conexión.
-     * @return Estación ubicada en el extremo contrario.
-     * @throws IllegalArgumentException Si la estación es null
-     * o no pertenece a esta conexión.
-     */
-    public Estacion getOtroExtremo(Estacion estacion) {
 
-        if (estacion == null) {
+// Le pasas una de las dos estaciones y te devuelve la otra
+    public Estacion getOtroExtremo(Estacion estacion) {
+        if (estacion == null) { // Si no pasaron ninguna estacion
             throw new IllegalArgumentException(
                     "La estación no puede ser nula."
             );
         }
 
-        if (estacion.equals(origen)) {
+        if (estacion.equals(origen)) { // Si le pasas el origen, te da el destino
             return destino;
         }
 
-        if (estacion.equals(destino)) {
+        if (estacion.equals(destino)) { // Si le pasas el destino, te da el origen
             return origen;
         }
 
+        // Si pasaste una estacion que no tiene nada que ver con este viaje
         throw new IllegalArgumentException(
                 "La estación no pertenece a esta conexión."
         );
     }
 
-    /**
-     * Genera la representación CSV de la conexión.
-     *
-     * El formato es: origen,destino,tiempo.
-     *
-     * @return Cadena con los identificadores de las estaciones
-     * y el tiempo de recorrido.
-     */
+
+// Prepara los datos separados por comas para guardarlos en un archivo
     public String toCSVString() {
         return origen.getId() + ","
                 + destino.getId() + ","
                 + tiempo;
     }
 
-    /**
-     * Compara esta conexión con otro objeto.
-     *
-     * Dos conexiones se consideran iguales cuando tienen
-     * el mismo origen y el mismo destino.
-     * El tiempo de recorrido no interviene en la comparación.
-     *
-     * La comparación conserva la dirección de la conexión.
-     *
-     * @param objeto Objeto con el que se desea comparar.
-     * @return true si ambos objetos representan la misma conexión;
-     * false en caso contrario.
-     */
+
+// Compara si dos conexiones son la misma (el tiempo no importa aqui)
     @Override
     public boolean equals(Object objeto) {
-
-        if (this == objeto) {
+        if (this == objeto) { // Si es exactamente la misma en memoria
             return true;
         }
 
-        if (!(objeto instanceof Conexion)) {
+        if (!(objeto instanceof Conexion)) { // Si ni siquiera es una conexion
             return false;
         }
 
-        Conexion otra = (Conexion) objeto;
+        Conexion otra = (Conexion) objeto; // Hacemos la conversion segura
 
+        // Solo son iguales si salen del mismo lugar y llegan al mismo lugar
         return origen.equals(otra.origen)
                 && destino.equals(otra.destino);
     }
 
-    /**
-     * Genera una representación textual de la conexión.
-     *
-     * @return Texto con el origen, destino y tiempo de recorrido.
-     */
+
+// Muestra la conexion de forma linda, ejemplo: A -> B (5.0)
     @Override
     public String toString() {
         return origen.getId() + " -> "
