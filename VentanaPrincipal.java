@@ -1,4 +1,5 @@
 package urbanroute.interfaz;
+
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.GridLayout;
@@ -8,6 +9,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
+
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -24,6 +26,7 @@ import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.filechooser.FileNameExtensionFilter;
+
 import urbanroute.control.AnalizadorRed;
 import urbanroute.control.GestorArchivo;
 import urbanroute.modelo.Estacion;
@@ -31,64 +34,26 @@ import urbanroute.modelo.GrafoPonderado;
 import urbanroute.modelo.TablaHash;
 import urbanroute.tda.ListaEnlazada;
 import urbanroute.tda.Nodo;
+
 /**
- * Ventana principal de UrbanRoute.
- *
- * Coordina las operaciones realizadas por el usuario y conecta
- * la interfaz gráfica con las estructuras de datos y los módulos
- * encargados de la persistencia, el análisis y la visualización.
- *
- * La administración de estaciones y conexiones se delega en
- * GrafoPonderado, que debe mantener sincronizada la tabla hash.
- *
- * La clase no implementa directamente los algoritmos del grafo
- * ni las operaciones internas de las estructuras de datos.
- *
- * @author Equipo UrbanRoute
+ * Ventana principal de la aplicación UrbanRoute.
  */
 public class VentanaPrincipal extends JFrame {
 
-    /** Tabla hash utilizada para indexar las estaciones. */
-    private TablaHash tabla;
-
-    /** Grafo ponderado que representa la red de transporte. */
-    private GrafoPonderado grafo;
-
-    /** Encargado de cargar y guardar los archivos CSV. */
-    private GestorArchivo gestor;
-
-    /** Encargado de ejecutar los algoritmos de análisis de la red. */
-    private AnalizadorRed analizador;
-
-    /** Encargado de representar gráficamente la red. */
-    private VisualizadorGrafo visualizador;
-
-    /** Área donde se muestran los mensajes de la aplicación. */
-    private JTextArea areaLog;
-
-    /** Carpeta utilizada como referencia para los selectores de archivos. */
-    private File ultimaCarpeta;
-
-    /** Archivo CSV de estaciones cargado o guardado actualmente. */
-    private File archivoDiccionario;
-
-    /** Archivo CSV de conexiones cargado o guardado actualmente. */
-    private File archivoGrafo;
-
-    /** Panel que contiene la visualización y el registro de mensajes. */
-    private JSplitPane panelDividido;
-
-    /** Indica si existen modificaciones que todavía no se han guardado. */
-    private boolean cambiosPendientes;
+    private TablaHash tabla; // Tabla hash para indexar las estaciones
+    private GrafoPonderado grafo; // Grafo ponderado de la red de transporte
+    private GestorArchivo gestor; // Gestor de lectura y escritura de archivos CSV
+    private AnalizadorRed analizador; // Módulo de análisis de rutas y subredes
+    private VisualizadorGrafo visualizador; // Visualizador gráfico de la red
+    private JTextArea areaLog; // Área de texto para mostrar mensajes del sistema
+    private File ultimaCarpeta; // Última carpeta utilizada en los selectores
+    private File archivoDiccionario; // Archivo CSV de estaciones actual
+    private File archivoGrafo; // Archivo CSV de conexiones actual
+    private JSplitPane panelDividido; // Panel que divide la vista y el log
+    private boolean cambiosPendientes; // Bandera de modificaciones sin guardar
 
     /**
-     * Construye la ventana principal de UrbanRoute.
-     *
-     * Inicializa la tabla hash, el grafo ponderado, el gestor de
-     * archivos, el analizador y el visualizador.
-     *
-     * También construye la interfaz e intenta cargar los archivos
-     * predeterminados de la carpeta datos.
+     * Constructor: inicializa las estructuras y carga los datos predeterminados.
      */
     public VentanaPrincipal() {
         super("UrbanRoute");
@@ -106,10 +71,7 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Construye los componentes gráficos y organiza la ventana.
-     *
-     * La interfaz se divide en tres grupos de operaciones:
-     * archivos, modificaciones de la red y análisis.
+     * Construye los componentes gráficos y organiza la interfaz principal.
      */
     private void construirUI() {
 
@@ -120,89 +82,81 @@ public class VentanaPrincipal extends JFrame {
 
         agregarControlDeCierre();
 
+        // Panel de acciones para la gestión de archivos
         JPanel grupoArchivos = grupo(
                 "Archivos",
 
                 boton("Cargar diccionario", new ActionListener() {
-                    @Override
                     public void actionPerformed(ActionEvent e) {
                         accionCargarEstaciones();
                     }
                 }),
 
                 boton("Cargar grafo", new ActionListener() {
-                    @Override
                     public void actionPerformed(ActionEvent e) {
                         accionCargarConexiones();
                     }
                 }),
 
                 boton("Guardar cambios", new ActionListener() {
-                    @Override
                     public void actionPerformed(ActionEvent e) {
                         accionGuardar();
                     }
                 })
         );
 
+        // Panel de acciones para modificar la red
         JPanel grupoRed = grupo(
                 "Red",
 
                 boton("Agregar estación", new ActionListener() {
-                    @Override
                     public void actionPerformed(ActionEvent e) {
                         accionAgregarEstacion();
                     }
                 }),
 
                 boton("Eliminar estación", new ActionListener() {
-                    @Override
                     public void actionPerformed(ActionEvent e) {
                         accionEliminarEstacion();
                     }
                 }),
 
                 boton("Agregar conexión", new ActionListener() {
-                    @Override
                     public void actionPerformed(ActionEvent e) {
                         accionAgregarConexion();
                     }
                 }),
 
                 boton("Eliminar conexión", new ActionListener() {
-                    @Override
                     public void actionPerformed(ActionEvent e) {
                         accionEliminarConexion();
                     }
                 })
         );
 
+        // Panel de acciones para los algoritmos de análisis
         JPanel grupoAnalisis = grupo(
                 "Análisis",
 
                 boton("Ruta mínima", new ActionListener() {
-                    @Override
                     public void actionPerformed(ActionEvent e) {
                         accionRutaMinima();
                     }
                 }),
 
                 boton("Subredes aisladas", new ActionListener() {
-                    @Override
                     public void actionPerformed(ActionEvent e) {
                         accionSubredes();
                     }
                 }),
 
                 boton("Hubs", new ActionListener() {
-                    @Override
                     public void actionPerformed(ActionEvent e) {
                         accionHubs();
                     }
                 }),
 
                 boton("Actualizar grafo", new ActionListener() {
-                    @Override
                     public void actionPerformed(ActionEvent e) {
                         accionMostrarGrafo();
                     }
@@ -240,16 +194,11 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Configura el comportamiento de la ventana cuando el usuario
-     * intenta cerrarla.
-     *
-     * Si existen modificaciones pendientes, solicita que el usuario
-     * decida si desea guardarlas, descartarlas o cancelar el cierre.
+     * Configura el evento de cierre de la ventana para controlar cambios sin guardar.
      */
     private void agregarControlDeCierre() {
 
         addWindowListener(new WindowAdapter() {
-            @Override
             public void windowClosing(WindowEvent e) {
                 cerrarAplicacion();
             }
@@ -257,9 +206,7 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Controla el cierre de la aplicación.
-     *
-     * @return true si la aplicación puede cerrarse; false en caso contrario
+     * Gestiona el cierre de la aplicación advirtiendo si hay modificaciones pendientes.
      */
     private void cerrarAplicacion() {
 
@@ -297,11 +244,7 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Inicializa nuevamente los módulos que dependen del grafo.
-     *
-     * Debe ejecutarse cuando se sustituye la tabla hash o el grafo,
-     * para evitar que el analizador y el visualizador conserven
-     * referencias a estructuras anteriores.
+     * Reconstruye las dependencias del analizador y el visualizador ante cambios en el grafo.
      */
     private void reconstruirDependencias() {
 
@@ -317,11 +260,7 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Crea un botón y registra la acción que debe ejecutar.
-     *
-     * @param texto texto que aparecerá en el botón
-     * @param accion acción asociada al botón
-     * @return botón configurado
+     * Crea un botón gráfico y le asocia un evento de acción.
      */
     private JButton boton(String texto, ActionListener accion) {
 
@@ -332,11 +271,7 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Construye un panel con título y hasta cuatro botones.
-     *
-     * @param titulo título del grupo
-     * @param botones botones que se incluirán
-     * @return panel organizado en una cuadrícula
+     * Crea un panel agrupado con título y una cuadrícula de botones.
      */
     private JPanel grupo(String titulo, JButton... botones) {
 
@@ -356,10 +291,7 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Intenta cargar automáticamente los archivos predeterminados.
-     *
-     * Utiliza estructuras temporales para evitar que una carga
-     * fallida deje el modelo principal en un estado inconsistente.
+     * Intenta cargar automáticamente los archivos predeterminados de la carpeta datos.
      */
     private void cargarDatosPorDefecto() {
 
@@ -401,7 +333,6 @@ public class VentanaPrincipal extends JFrame {
             }
 
         } else {
-
             mostrarMensaje("Aviso: no se encontró datos/diccionario.csv.");
         }
 
@@ -439,7 +370,6 @@ public class VentanaPrincipal extends JFrame {
             );
 
         } else if (!archivoConexiones.exists()) {
-
             mostrarMensaje("Aviso: no se encontró datos/grafo.csv.");
         }
 
@@ -452,13 +382,7 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Comprueba si el usuario desea sustituir los datos actuales.
-     *
-     * Advierte expresamente cuando existen modificaciones pendientes
-     * de guardar.
-     *
-     * @param operacion descripción de la sustitución que se realizará
-     * @return true si el usuario acepta; false si cancela
+     * Solicita confirmación al usuario antes de sobrescribir los datos actuales.
      */
     private boolean confirmarSustitucion(String operacion) {
 
@@ -481,11 +405,7 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Carga un nuevo diccionario de estaciones.
-     *
-     * La carga se realiza primero en una tabla hash y un grafo
-     * temporales. Las estructuras actuales se sustituyen únicamente
-     * si el gestor completa la operación.
+     * Gestiona la acción de cargar un nuevo diccionario de estaciones desde archivo.
      */
     private void accionCargarEstaciones() {
 
@@ -542,15 +462,7 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Construye un nuevo grafo con copias de las estaciones actuales.
-     *
-     * Cada estación conserva sus datos descriptivos, pero las
-     * conexiones se reconstruyen desde el archivo seleccionado.
-     *
-     * Esto evita reutilizar una tabla hash que ya contiene las
-     * estaciones del grafo anterior.
-     *
-     * @return nueva estructura de grafo sin conexiones
+     * Crea una nueva estructura de grafo vacía copiando las estaciones actuales.
      */
     private GrafoPonderado crearGrafoSinConexiones() {
 
@@ -580,11 +492,7 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Carga las conexiones de un archivo CSV.
-     *
-     * La operación se realiza sobre un grafo temporal que contiene
-     * copias de las estaciones actuales. De esta manera, si la lectura
-     * falla, el grafo que estaba utilizando el usuario permanece intacto.
+     * Gestiona la acción de cargar las conexiones de la red desde un archivo CSV.
      */
     private void accionCargarConexiones() {
 
@@ -623,11 +531,6 @@ public class VentanaPrincipal extends JFrame {
             archivoGrafo = archivo;
             ultimaCarpeta = archivo.getParentFile();
 
-            /*
-             * Se conserva el estado pendiente anterior porque
-             * las estaciones podrían contener modificaciones
-             * que todavía no se han guardado.
-             */
             cambiosPendientes = habiaCambiosPendientes;
 
             reconstruirDependencias();
@@ -648,44 +551,23 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Obtiene la tabla hash asociada al grafo temporal.
-     *
-     * La tabla que se conserva debe ser exactamente la utilizada
-     * internamente por el grafo, para mantener sincronizadas ambas
-     * estructuras.
-     *
-     * @param grafoTemporal grafo del que se obtiene la tabla
-     * @return tabla hash asociada al grafo
+     * Obtiene la tabla hash interna asociada a un grafo temporal.
      */
     private TablaHash obtenerTablaDelGrafoTemporal(
             GrafoPonderado grafoTemporal
     ) {
-        /*
-         * Se crea la tabla antes de construir el grafo temporal.
-         * Este método se mantiene como punto de integración.
-         *
-         * La implementación del proyecto debe proporcionar el acceso
-         * a la tabla asociada al grafo si se necesita recuperar
-         * esa misma instancia.
-         */
         return grafoTemporal.getIndice();
     }
 
     /**
-     * Abre el selector de carpetas y guarda los cambios de la red.
+     * Gestiona la acción de guardar los cambios actuales en los archivos de la red.
      */
     private void accionGuardar() {
         guardarCambiosEnCarpeta();
     }
 
     /**
-     * Guarda el diccionario y las conexiones en una carpeta seleccionada.
-     *
-     * Cuando la operación termina correctamente, se actualizan las
-     * referencias a los archivos guardados y se elimina el indicador
-     * de modificaciones pendientes.
-     *
-     * @return true si el guardado terminó correctamente
+     * Despliega un selector de directorios y guarda los cambios de la red.
      */
     private boolean guardarCambiosEnCarpeta() {
 
@@ -753,13 +635,9 @@ public class VentanaPrincipal extends JFrame {
         }
     }
 
+
     /**
      * Determina la carpeta inicial que utilizará el selector de guardado.
-     *
-     * Prioriza la última carpeta utilizada. Si todavía no existe,
-     * utiliza la ubicación de alguno de los archivos cargados.
-     *
-     * @return carpeta inicial para el selector
      */
     private File obtenerCarpetaInicial() {
 
@@ -792,8 +670,7 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Sincroniza el visualizador con el grafo actual y actualiza
-     * el componente mostrado en la ventana.
+     * Sincroniza el visualizador con el grafo actual y actualiza el componente gráfico.
      */
     private void actualizarVisualizacion() {
 
@@ -828,10 +705,7 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Agrega una estación y, opcionalmente, una conexión con una
-     * estación que ya exista en la red.
-     *
-     * Los datos se validan antes de modificar el grafo.
+     * Agrega una nueva estación y opcionalmente una conexión inicial con otra existente.
      */
     private void accionAgregarEstacion() {
 
@@ -945,7 +819,6 @@ public class VentanaPrincipal extends JFrame {
                     }
 
                 } catch (NumberFormatException ex) {
-
                     error = "La capacidad debe ser un número entero.";
                 }
             }
@@ -987,7 +860,6 @@ public class VentanaPrincipal extends JFrame {
                 }
 
                 if (vecino != null) {
-
                     grafo.agregarConexion(
                             nueva.getId(),
                             vecino.getId(),
@@ -997,11 +869,7 @@ public class VentanaPrincipal extends JFrame {
 
             } catch (RuntimeException ex) {
 
-                /*
-                 * Si la inserción de la conexión falla después
-                 * de insertar la estación, se intenta revertir
-                 * la inserción para evitar un estado parcial.
-                 */
+                // Si falla la conexión, intenta revertir la inserción de la estación
                 try {
 
                     if (grafo.buscarEstacion(id) == nueva) {
@@ -1044,9 +912,7 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Elimina una estación y las conexiones asociadas.
-     *
-     * @return no devuelve ningún valor
+     * Elimina una estación seleccionada de la red junto a sus conexiones.
      */
     private void accionEliminarEstacion() {
 
@@ -1098,7 +964,7 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Agrega o actualiza una conexión entre dos estaciones.
+     * Agrega o actualiza una conexión directa entre dos estaciones.
      */
     private void accionAgregarConexion() {
 
@@ -1218,10 +1084,7 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Solicita una ruta óptima entre dos estaciones.
-     *
-     * Delega el cálculo en AnalizadorRed y presenta el resultado
-     * en el registro y en la visualización gráfica.
+     * Calcula y muestra la ruta mínima entre dos estaciones usando Dijkstra.
      */
     private void accionRutaMinima() {
 
@@ -1288,8 +1151,7 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Permite analizar las subredes de la red actual o simular
-     * la interrupción de una estación o línea.
+     * Analiza las subredes de la red o simula la desconexión de componentes.
      */
     private void accionSubredes() {
 
@@ -1377,11 +1239,9 @@ public class VentanaPrincipal extends JFrame {
         }
     }
 
+    
     /**
      * Presenta los componentes conexos encontrados por el analizador.
-     *
-     * @param descripcion escenario utilizado para el análisis
-     * @param subredes componentes encontrados
      */
     private void mostrarSubredes(
             String descripcion,
@@ -1444,7 +1304,6 @@ public class VentanaPrincipal extends JFrame {
             cantidad = Integer.parseInt(texto.trim());
 
         } catch (NumberFormatException ex) {
-
             mostrarError("Ingrese un número entero.");
             return;
         }
@@ -1480,7 +1339,6 @@ public class VentanaPrincipal extends JFrame {
                 );
 
                 puesto++;
-
                 nodo = nodo.getSiguiente();
             }
 
@@ -1495,9 +1353,6 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Abre un selector de archivos CSV.
-     *
-     * @param titulo título que aparecerá en el selector
-     * @return archivo elegido o null si el usuario cancela
      */
     private File elegirArchivo(String titulo) {
 
@@ -1536,9 +1391,6 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Solicita confirmación antes de realizar una operación destructiva.
-     *
-     * @param mensaje advertencia que verá el usuario
-     * @return true si el usuario confirma
      */
     private boolean confirmarAdvertencia(String mensaje) {
 
@@ -1555,11 +1407,6 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Permite seleccionar una estación mediante una lista tipada.
-     *
-     * @param titulo título del diálogo
-     * @param mensaje instrucción para el usuario
-     * @param opciones estaciones disponibles
-     * @return estación seleccionada o null si se cancela
      */
     private Estacion elegirEstacion(
             String titulo,
@@ -1600,11 +1447,6 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Permite seleccionar una línea mediante una lista tipada.
-     *
-     * @param titulo título del diálogo
-     * @param mensaje instrucción para el usuario
-     * @param opciones líneas disponibles
-     * @return línea seleccionada o null si se cancela
      */
     private String elegirLinea(
             String titulo,
@@ -1644,8 +1486,6 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Obtiene todas las estaciones registradas en el grafo.
-     *
-     * @return arreglo de estaciones actuales
      */
     private Estacion[] todasLasEstaciones() {
 
@@ -1662,7 +1502,6 @@ public class VentanaPrincipal extends JFrame {
             estaciones[indice] = nodo.getDato();
 
             indice++;
-
             nodo = nodo.getSiguiente();
         }
 
@@ -1670,10 +1509,7 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Obtiene las estaciones de la red, excluyendo una estación.
-     *
-     * @param excluida estación que no debe aparecer
-     * @return arreglo con las estaciones restantes
+     * Obtiene las estaciones de la red, excluyendo una en específico.
      */
     private Estacion[] todasExcepto(Estacion excluida) {
 
@@ -1682,7 +1518,6 @@ public class VentanaPrincipal extends JFrame {
         int cantidad = 0;
 
         for (int i = 0; i < todas.length; i++) {
-
             if (!todas[i].getId().equals(excluida.getId())) {
                 cantidad++;
             }
@@ -1695,9 +1530,7 @@ public class VentanaPrincipal extends JFrame {
         for (int i = 0; i < todas.length; i++) {
 
             if (!todas[i].getId().equals(excluida.getId())) {
-
                 restantes[indice] = todas[i];
-
                 indice++;
             }
         }
@@ -1706,17 +1539,11 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Obtiene las líneas diferentes que existen en la red.
-     *
-     * Utiliza arreglos y comparaciones directas, sin recurrir a
-     * estructuras del Java Collections Framework.
-     *
-     * @return arreglo de líneas sin repetición
+     * Obtiene los nombres de las líneas diferentes existentes en la red.
      */
     private String[] lineasExistentes() {
 
-        ListaEnlazada<Estacion> estaciones =
-                grafo.getEstaciones();
+        ListaEnlazada<Estacion> estaciones = grafo.getEstaciones();
 
         String[] temporales =
                 new String[grafo.numEstaciones()];
@@ -1728,13 +1555,11 @@ public class VentanaPrincipal extends JFrame {
         while (nodo != null) {
 
             Estacion estacion = nodo.getDato();
-
             String linea = estacion.getLinea();
 
             boolean repetida = false;
 
             for (int i = 0; i < cantidad; i++) {
-
                 if (temporales[i].equals(linea)) {
                     repetida = true;
                     break;
@@ -1742,9 +1567,7 @@ public class VentanaPrincipal extends JFrame {
             }
 
             if (!repetida) {
-
                 temporales[cantidad] = linea;
-
                 cantidad++;
             }
 
@@ -1761,9 +1584,7 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Construye una cadena con las líneas disponibles.
-     *
-     * @return texto con las líneas existentes
+     * Construye una cadena descriptiva con las líneas disponibles.
      */
     private String textoLineasExistentes() {
 
@@ -1788,13 +1609,7 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Comprueba que un texto obligatorio sea válido.
-     *
-     * Se rechazan valores vacíos, comas y saltos de línea para
-     * evitar problemas con el formato CSV utilizado por el proyecto.
-     *
-     * @param texto texto que se desea validar
-     * @return true si el texto es válido
+     * Comprueba que un texto obligatorio sea válido para el formato CSV.
      */
     private boolean textoValido(String texto) {
 
@@ -1806,12 +1621,7 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Convierte el texto recibido en un tiempo de viaje válido.
-     *
-     * Solo acepta valores estrictamente positivos y finitos.
-     *
-     * @param texto representación textual del tiempo
-     * @return tiempo válido o -1 si la entrada es incorrecta
+     * Convierte el texto recibido en un valor numérico de tiempo válido.
      */
     private double leerTiempo(String texto) {
 
@@ -1829,16 +1639,12 @@ public class VentanaPrincipal extends JFrame {
             return tiempo > 0 ? tiempo : -1;
 
         } catch (NumberFormatException ex) {
-
             return -1;
         }
     }
 
     /**
-     * Solicita al usuario un tiempo de viaje válido.
-     *
-     * @param mensaje instrucción que aparecerá en el diálogo
-     * @return tiempo seleccionado o null si el usuario cancela
+     * Solicita al usuario un tiempo de viaje válido mediante diálogo.
      */
     private Double pedirTiempo(String mensaje) {
 
@@ -1869,11 +1675,7 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Convierte una lista de estaciones en una cadena de texto.
-     *
-     * @param lista estaciones que se mostrarán
-     * @param separador texto utilizado entre estaciones
-     * @return representación textual de la lista
+     * Convierte una lista de estaciones en una cadena de texto separada.
      */
     private String listaATexto(
             ListaEnlazada<Estacion> lista,
@@ -1901,19 +1703,14 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Marca la red como modificada.
-     *
-     * Debe invocarse después de que una operación de modificación
-     * haya terminado satisfactoriamente.
+     * Marca la red con una bandera indicando que hay cambios pendientes.
      */
     private void marcarCambiosPendientes() {
         cambiosPendientes = true;
     }
 
     /**
-     * Escribe una línea en el registro de la ventana.
-     *
-     * @param texto mensaje que se desea mostrar
+     * Escribe una línea de mensaje en el registro de la ventana.
      */
     public void mostrarMensaje(String texto) {
 
@@ -1929,9 +1726,7 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Muestra un cuadro de diálogo de error.
-     *
-     * @param texto descripción del error
+     * Muestra un cuadro de diálogo emergente con un mensaje de error.
      */
     public void mostrarError(String texto) {
 
@@ -1945,8 +1740,6 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Obtiene la tabla hash utilizada por el sistema.
-     *
-     * @return tabla hash actual
      */
     public TablaHash getTabla() {
         return tabla;
@@ -1954,17 +1747,13 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Obtiene el grafo ponderado actual.
-     *
-     * @return grafo utilizado por la aplicación
      */
     public GrafoPonderado getGrafo() {
         return grafo;
     }
 
     /**
-     * Obtiene el gestor de archivos.
-     *
-     * @return gestor encargado de la persistencia
+     * Obtiene el gestor de archivos asociado.
      */
     public GestorArchivo getGestor() {
         return gestor;
@@ -1972,8 +1761,6 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Obtiene el analizador de la red.
-     *
-     * @return analizador de algoritmos del grafo
      */
     public AnalizadorRed getAnalizador() {
         return analizador;
@@ -1981,8 +1768,6 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Obtiene el visualizador gráfico de la red.
-     *
-     * @return visualizador actual
      */
     public VisualizadorGrafo getVisualizador() {
         return visualizador;
