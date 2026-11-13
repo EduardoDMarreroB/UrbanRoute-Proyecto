@@ -1,7 +1,7 @@
 package urbanroute.tda;
 
 /**
- * Cola FIFO hecha con nodos. Se usa en el recorrido BFS.
+ * Cola con estructura FIFO hecha con nodos. Se usa para el recorrido BFS.
  */
 public class Cola {
     private Nodo frente;
