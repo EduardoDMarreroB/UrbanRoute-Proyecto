@@ -35,9 +35,9 @@ public class TablaHash {
     private ListaEnlazada<Entrada>[] casillas;
     private int tamano; // Cantidad de estaciones guardadas en total
 
-/** 
- * Crea una tabla vacia empezando con 101 espacios.
- */
+    /** 
+     * Crea una tabla vacia empezando con 101 espacios.
+     */
     public TablaHash() {
         casillas = crearCasillas(capacidad_Inicial);
         tamano = 0; // Empezamos en cero
@@ -79,10 +79,10 @@ public class TablaHash {
         return null; // Si no estaba guardado ahí
     }
 
-/** 
- * Guarda una estacion por ID. 
- * Si la tabla está muy llena, la hace más grande.
- */
+    /** 
+     * Guarda una estacion por ID. 
+     * Si la tabla está muy llena, la hace más grande.
+     */
     public void insertar(String clave, Estacion valor) {
         if (clave == null || clave.trim().isEmpty()) { // Validamos el ID
             throw new IllegalArgumentException(
@@ -120,9 +120,9 @@ public class TablaHash {
         tamano++; // Sumamos uno al contador total
     }
 
-/** 
- * Busca una estacion usando su ID y te la devuelve.
- */
+    /** 
+     * Busca una estacion usando su ID y te la devuelve.
+     */
     public Estacion buscar(String clave) {
         if (clave == null || clave.trim().isEmpty()) {
             return null;
@@ -134,16 +134,16 @@ public class TablaHash {
         return entrada == null ? null : entrada.valor; 
     }
 
-/** 
- * Obtiene una estacion mediante su identificador.
- */    
+    /** 
+     * Obtiene una estacion mediante su identificador.
+     */    
     public Estacion obtener(String clave) {
         return buscar(clave);
     }
 
-/** 
- * Borra una estacion usando su ID.
- */
+    /** 
+     * Borra una estacion usando su ID.
+     */
     public boolean eliminar(String clave) {
         if (clave == null || clave.trim().isEmpty()) {
             return false;
@@ -169,9 +169,9 @@ public class TablaHash {
         return eliminada;
     }
 
-/**
- * Recorre toda la tabla y te da una lista con todas las estaciones juntas.
- */
+    /**
+     * Recorre toda la tabla y te da una lista con todas las estaciones juntas.
+     */
     public ListaEnlazada<Estacion> obtenerTodas() {
         ListaEnlazada<Estacion> todas = new ListaEnlazada<>();
         for (int i = 0; i < casillas.length; i++) {
@@ -188,9 +188,9 @@ public class TablaHash {
         return todas;
     }
 
-/** 
- * Te dice si una estacion con ese ID ya está guardada en la tabla.
- */
+    /** 
+     * Te dice si una estacion con ese ID ya está guardada en la tabla.
+     */
     public boolean contiene_ID(String clave) {
         if (clave == null || clave.trim().isEmpty()) {
             return false;
@@ -201,29 +201,28 @@ public class TablaHash {
         return buscarEntrada(posicion, claveLimpia) != null;
     }
 
-/** 
- * Te dice cuantas estaciones hay guardadas en total.
- */
+    /** 
+     * Te dice cuantas estaciones hay guardadas en total.
+     */
     public int obtenerTamano() {
         return tamano;
     }
 
-/** 
- * Te dice de qué tamaño es el arreglo en ese momento.
- */
+    /** 
+     * Te dice de qué tamaño es el arreglo en ese momento.
+     */
     public int obtenerCapacidad() {
         return casillas.length;
     }
 
-/** 
- * Calcula qué porcentaje de la tabla está ocupada.
- */
+    /** 
+     * Calcula qué porcentaje de la tabla está ocupada.
+     */
     public double obtenerFactorCarga() {
         return (double) tamano / casillas.length;
     }
 
-//Agranda la tabla al doble (buscando un numero primo) y reubica todo.
-
+    //Agranda la tabla al doble (buscando un numero primo) y reubica todo.
     private void agrandar() {
         ListaEnlazada<Entrada>[] anteriores = casillas;
         // Buscamos un tamaño nuevo que sea numero primo
@@ -247,7 +246,7 @@ public class TablaHash {
         }
     }
 
-// Busca un numero primo que sea igual o mayor al numero que le pases
+    // Busca un numero primo que sea igual o mayor al numero que le pases
     private int siguientePrimo(int numero) {
         int candidato = numero;
         if (candidato <= 2) {
@@ -262,7 +261,7 @@ public class TablaHash {
         return candidato;
     }
 
-// Verifica si un número entero dado es primo    
+    // Verifica si un número entero dado es primo    
     private boolean esPrimo(int numero) {
         if (numero < 2) {
             return false;
@@ -276,9 +275,9 @@ public class TablaHash {
         return true;
     }
 
-/** 
- * Borra absolutamente todo y reinicia la tabla a como estaba al principio.
- */
+    /** 
+     * Borra absolutamente todo y reinicia la tabla a como estaba al principio.
+     */
     public void limpiar() {
         casillas = crearCasillas(capacidad_Inicial);
         tamano = 0;
