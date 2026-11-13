@@ -13,8 +13,9 @@ public class Estacion {
     // Lista con las conexiones de la estacion
     private final ListaEnlazada<Conexion> conexiones; 
 
-
-// Crea una estacion con sus datos y prepara su lista de conexiones
+    /**
+     * Crea una estacion con sus datos y prepara su lista de conexiones.
+     */
     public Estacion(String id, String nombre, String linea, String zona, 
                     int capacidad) {
         
@@ -33,8 +34,9 @@ public class Estacion {
         this.conexiones = new ListaEnlazada<>(); // Empezamos con lista vacia
     }
 
-
-// Revisa que un texto no sea nulo ni este vacio
+    /**
+     * Revisa que un texto no sea nulo ni este vacio.
+     */
     private void validarTexto(String valor, String campo) {
         if (valor == null || valor.trim().isEmpty()) { // Si el texto no sirve
             throw new IllegalArgumentException(
@@ -43,8 +45,9 @@ public class Estacion {
         }
     }
 
-
-// Revisa que la capacidad sea un numero positivo
+    /**
+     * Revisa que la capacidad sea un numero positivo.
+     */
     private void validarCapacidad(int capacidad) {
         if (capacidad < 0) { // No aceptamos numeros negativos
             throw new IllegalArgumentException(
@@ -53,78 +56,90 @@ public class Estacion {
         }
     }
 
-
-// Obtiene el ID de la estacion
+    /**
+     * Obtiene el ID de la estacion.
+     */
     public String getId() {
         return id;
     }
 
-
-// Obtiene el nombre de la estacion
+    /**
+     * Obtiene el nombre de la estacion.
+     */
     public String getNombre() {
         return nombre;
     }
 
-
-// Cambia el nombre de la estacion
+    /**
+     * Cambia el nombre de la estacion.
+     */
     public void setNombre(String nombre) {
         validarTexto(nombre, "El nombre");
         this.nombre = nombre.trim();
     }
 
-
-// Obtiene la linea a la que pertenece
+    /**
+     * Obtiene la linea a la que pertenece.
+     */
     public String getLinea() {
         return linea;
     }
 
-
-// Cambia la linea de la estacion
+    /**
+     * Cambia la linea de la estacion.
+     */
     public void setLinea(String linea) {
         validarTexto(linea, "La línea");
         this.linea = linea.trim();
     }
 
-
-// Obtiene la zona donde esta la estacion
+    /**
+     * Obtiene la zona donde esta la estacion.
+     */
     public String getZona() {
         return zona;
     }
 
-
-// Cambia la zona de la estacion
+    /**
+     * Cambia la zona de la estacion.
+     */
     public void setZona(String zona) {
         validarTexto(zona, "La zona");
         this.zona = zona.trim();
     }
 
-
-// Obtiene la capacidad de pasajeros
+    /**
+     * Obtiene la capacidad de pasajeros.
+     */
     public int getCapacidad() {
         return capacidad;
     }
 
-
-// Cambia la capacidad de pasajeros
+    /**
+     * Cambia la capacidad de pasajeros.
+     */
     public void setCapacidad(int capacidad) {
         validarCapacidad(capacidad);
         this.capacidad = capacidad;
     }
 
-
-// Obtiene la lista de conexiones de la estacion
+    /**
+     * Obtiene la lista de conexiones de la estacion.
+     */
     public ListaEnlazada<Conexion> getConexiones() {
         return conexiones;
     }
 
-
-// Obtiene la cantidad de conexiones que tiene la estacion
+    /**
+     * Obtiene la cantidad de conexiones que tiene la estacion.
+     */
     public int getGrado() {
         return conexiones.obtenerTamano();
     }
 
-
-// Compara esta estacion con otra usando el ID alfabeticamente
+    /**
+     * Compara esta estacion con otra usando el ID alfabeticamente.
+     */
     public int comparar(Estacion otra) {
         if (otra == null) { // Si la otra estacion no existe
             throw new IllegalArgumentException(
@@ -134,8 +149,9 @@ public class Estacion {
         return id.compareTo(otra.id);
     }
 
-
-// Arregla el texto para no dar errores al guardarlo en un archivo CSV
+    /**
+     * Arregla el texto para no dar errores al guardarlo en un archivo CSV.
+     */
     private String escaparCSV(String valor) {
         if (valor == null) { // Si no hay texto, devolvemos un texto vacio
             return "";
@@ -149,8 +165,9 @@ public class Estacion {
         return valor; // Devolvemos el texto normal si no hay caracteres raros
     }
 
-
-// Convierte los datos de la estacion en una linea separada por comas
+    /**
+     * Convierte los datos de la estacion en una linea separada por comas.
+     */
     public String toCSVString() {
         return escaparCSV(id) + ","
                 + escaparCSV(nombre) + ","
@@ -159,9 +176,9 @@ public class Estacion {
                 + capacidad;
     }
 
-
-// Revisa si dos estaciones son la misma usando su ID
-    @Override
+    /**
+     * Revisa si dos estaciones son la misma usando su ID.
+     */
     public boolean equals(Object objeto) {
         if (this == objeto) { // Si es exactamente la misma estacion en memoria
             return true;
@@ -176,9 +193,9 @@ public class Estacion {
         return id.equals(otra.id); // Comparamos los IDs
     }
 
-
-// Muestra el nombre de la estacion junto con su ID
-    @Override
+    /**
+     * Muestra el nombre de la estacion junto con su ID.
+     */
     public String toString() {
         return nombre + " [" + id + "]";
     }
