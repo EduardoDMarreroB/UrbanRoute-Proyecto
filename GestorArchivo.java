@@ -19,21 +19,38 @@ import urbanroute.tda.Nodo;
 
 /**
  * Gestiona la lectura y escritura de los archivos CSV de la red.
+ * <p>
+ * Se encarga de leer el diccionario de estaciones y el archivo de conexiones,
+ * validando que el formato sea correcto y omitiendo las líneas que no lo sean.
+ * También se encarga de guardar los cambios de forma segura usando archivos
+ * temporales y respaldos para no perder datos si ocurre un error a mitad de
+ * la escritura.
  */
 public class GestorArchivo {
-    private VentanaPrincipal ventana; // Ventana para mostrar errores
-    private int lineasInvalidas; // Contador de lineas invalidas en la carga
+
+    /** Ventana principal, utilizada para mostrar los errores o avisos al usuario. */
+    private VentanaPrincipal ventana;
+
+    /** Contador de líneas que se omitieron durante la última carga por ser inválidas. */
+    private int lineasInvalidas;
 
     /**
-     * Construye un gestor de archivos e inicializa sus valores.
+     * Construye un gestor de archivos asociado a una ventana principal.
+     *
+     * @param ventana ventana que se usará para notificar los errores.
      */
     public GestorArchivo(VentanaPrincipal ventana) {
-        this.ventana = ventana; // Guardamos la ventana principal
-        this.lineasInvalidas = 0; // Inicializamos contador en cero
+        this.ventana = ventana;
+        this.lineasInvalidas = 0;
     }
 
     /**
      * Carga estaciones desde un archivo CSV y las añade al grafo.
+     *
+     * @param ruta  ruta del archivo CSV que se quiere leer.
+     * @param grafo grafo al que se agregarán las estaciones.
+     * @return la cantidad de estaciones que se cargaron correctamente.
+     * @throws IOException si hay un problema al leer el archivo.
      */
     public int cargarEstaciones(
             String ruta, GrafoPonderado grafo) throws IOException {
@@ -41,7 +58,14 @@ public class GestorArchivo {
     }
 
     /**
-     * Carga estaciones verificando la tabla hash asociada al grafo.
+     * Carga estaciones verificando también la tabla hash asociada al grafo.
+     *
+     * @param ruta  ruta del archivo CSV que se quiere leer.
+     * @param tabla tabla hash que debe coincidir con la del grafo.
+     * @param grafo grafo al que se agregarán las estaciones.
+     * @return la cantidad de estaciones que se cargaron correctamente.
+     * @throws IOException              si hay un problema al leer el archivo.
+     * @throws IllegalArgumentException si la tabla hash es nula.
      */
     public int cargarEstaciones(
             String ruta,
@@ -57,6 +81,17 @@ public class GestorArchivo {
 
     /**
      * Procesa y carga las estaciones validando el archivo de texto.
+     * <p>
+     * Lee el archivo completo en dos fases: primero valida y guarda las
+     * estaciones en una lista temporal, y solo si todo el archivo está bien,
+     * las agrega al grafo principal. Así se evita dejar el grafo a medias si
+     * hay un error.
+     *
+     * @param ruta  ruta del archivo CSV.
+     * @param tabla tabla hash para verificar la coherencia (puede ser nula).
+     * @param grafo grafo al que se agregarán las estaciones.
+     * @return la cantidad de estaciones cargadas.
+     * @throws IOException si hay un error de lectura o el encabezado no es válido.
      */
     private int cargarEstacionesInterno(
             String ruta,
@@ -65,7 +100,8 @@ public class GestorArchivo {
         validarParametros(ruta, grafo);
         lineasInvalidas = 0;
         ListaEnlazada<Estacion> pendientes = new ListaEnlazada<>();
-        // Tabla auxiliar para detectar IDs repetidos en el archivo
+
+        // Tabla auxiliar para detectar IDs repetidos dentro del mismo archivo.
         TablaHash identificadoresLeidos = new TablaHash();
         boolean encabezadoEncontrado = false;
         try (BufferedReader lector = abrirLectura(ruta)) {
@@ -118,7 +154,8 @@ public class GestorArchivo {
                             zona,
                             capacidad
                     );
-                    // Comprueba si el ID ya fue leído en este archivo
+
+                    // Si el ID ya se leyó en este mismo archivo, no se repite.
                     if (identificadoresLeidos.contiene(id)) {
                         reportarInvalida(
                                 numeroLinea,
@@ -148,7 +185,8 @@ public class GestorArchivo {
                  nodo != null;
                  nodo = nodo.getSiguiente()) {
                 Estacion estacion = nodo.getDato();
-                // Intenta agregar la estación al grafo principal
+
+                // Intenta agregar la estación al grafo principal.
                 if (!grafo.agregarEstacion(estacion)) {
                     reportarInvalida(
                             0,
@@ -158,7 +196,9 @@ public class GestorArchivo {
                     continue;
                 }
                 agregadas.insertar(estacion);
-                // Verifica la correspondencia de la tabla hash
+
+                // Si nos pasaron una tabla hash externa, comprobamos que la estación
+                // se haya insertado correctamente y que sea la misma instancia.
                 if (tabla != null
                         && tabla.buscar(estacion.getId()) != estacion) {
                     throw new IOException(
@@ -169,7 +209,8 @@ public class GestorArchivo {
                 cargadas++;
             }
         } catch (IOException ex) {
-            // Revierte los cambios si ocurre un error
+            // Si algo falla, se eliminan las estaciones que ya se habían agregado
+            // para dejar el grafo como estaba antes de la carga.
             revertirEstaciones(grafo, agregadas);
             throw ex;
         }
@@ -178,6 +219,9 @@ public class GestorArchivo {
 
     /**
      * Revierte la incorporación de estaciones ante una falla.
+     *
+     * @param grafo     grafo del que se eliminarán las estaciones.
+     * @param agregadas lista de estaciones que se habían agregado.
      */
     private void revertirEstaciones(
             GrafoPonderado grafo,
@@ -192,6 +236,15 @@ public class GestorArchivo {
 
     /**
      * Carga las conexiones desde un archivo CSV al grafo.
+     * <p>
+     * Al igual que con las estaciones, primero se validan todas las líneas y
+     * se guardan en una lista temporal. Solo cuando el archivo entero es
+     * correcto, se agregan al grafo.
+     *
+     * @param ruta  ruta del archivo CSV de conexiones.
+     * @param grafo grafo al que se agregarán las conexiones.
+     * @return la cantidad de conexiones cargadas correctamente.
+     * @throws IOException si hay un problema de lectura o el encabezado no es válido.
      */
     public int cargarConexiones(
             String ruta, GrafoPonderado grafo) throws IOException {
@@ -240,7 +293,8 @@ public class GestorArchivo {
                     double tiempo = Double.parseDouble(
                             columnas[2].trim()
                     );
-                    // Valida que los datos de la conexión sean correctos
+
+                    // Validamos que no falten datos y que el tiempo sea un número real positivo.
                     if (idOrigen.isEmpty()
                             || idDestino.isEmpty()
                             || !Double.isFinite(tiempo)
@@ -253,7 +307,8 @@ public class GestorArchivo {
                     }
                     Estacion origen = grafo.buscarEstacion(idOrigen);
                     Estacion destino = grafo.buscarEstacion(idDestino);
-                    // Valida que ambas estaciones existan en el grafo
+
+                    // No se puede crear una conexión si alguna de las dos estaciones no existe.
                     if (origen == null || destino == null) {
                         reportarInvalida(
                                 numeroLinea,
@@ -285,7 +340,8 @@ public class GestorArchivo {
              nodo != null;
              nodo = nodo.getSiguiente()) {
             Conexion conexion = nodo.getDato();
-            // Inserta la conexión en el grafo ponderado
+
+            // Se inserta la conexión comprobando si el grafo la acepta.
             if (grafo.agregarConexion(
                     conexion.getOrigen(),
                     conexion.getDestino(),
@@ -304,15 +360,24 @@ public class GestorArchivo {
 
     /**
      * Guarda los cambios de la red en la carpeta especificada.
+     *
+     * @param carpeta ruta de la carpeta donde se guardarán los archivos.
+     * @param grafo   grafo con los datos a guardar.
+     * @throws IOException si ocurre un error al escribir los archivos.
      */
     public void guardarCambios(
             String carpeta, GrafoPonderado grafo) throws IOException {
         guardarCambiosInterno(carpeta, null, grafo);
     }
-}
 
-/**
+    /**
      * Guarda los archivos verificando la consistencia con la tabla hash.
+     *
+     * @param carpeta ruta de la carpeta donde se guardarán los archivos.
+     * @param tabla   tabla hash que debe coincidir con la del grafo.
+     * @param grafo   grafo con los datos a guardar.
+     * @throws IOException              si ocurre un error al escribir.
+     * @throws IllegalArgumentException si la tabla hash es nula.
      */
     public void guardarCambios(
             String carpeta,
@@ -328,6 +393,15 @@ public class GestorArchivo {
 
     /**
      * Ejecuta la escritura y el reemplazo seguro de ambos archivos.
+     * <p>
+     * Para no corromper los archivos originales si hay un error, primero se
+     * escribe todo en archivos temporales y, solo si ambos están bien, se
+     * reemplazan los originales.
+     *
+     * @param carpeta ruta de la carpeta destino.
+     * @param tabla   tabla hash para verificar coherencia (puede ser nula).
+     * @param grafo   grafo con los datos a guardar.
+     * @throws IOException si la carpeta no es válida o hay un fallo de escritura.
      */
     private void guardarCambiosInterno(
             String carpeta,
@@ -350,7 +424,8 @@ public class GestorArchivo {
                     + carpeta
             );
         }
-        // Comprueba la coherencia antes de escribir
+
+        // Comprobamos que los datos sean coherentes antes de empezar a escribir.
         validarConsistencia(grafo, tabla);
         File diccionarioDestino = new File(
                 directorio,
@@ -363,6 +438,8 @@ public class GestorArchivo {
         File diccionarioTemporal = null;
         File grafoTemporal = null;
         try {
+            // Creamos archivos temporales en la misma carpeta para que el movimiento
+            // final sea rápido y seguro.
             diccionarioTemporal = File.createTempFile(
                     "diccionario-",
                     ".tmp",
@@ -375,7 +452,8 @@ public class GestorArchivo {
             );
             escribirEstaciones(diccionarioTemporal, grafo);
             escribirConexiones(grafoTemporal, grafo);
-            // Reemplaza los originales solo si ambos temporales están listos
+
+            // Solo reemplazamos los originales cuando ambos temporales están listos.
             reemplazarArchivos(
                     diccionarioTemporal,
                     diccionarioDestino,
@@ -383,7 +461,7 @@ public class GestorArchivo {
                     grafoDestino
             );
         } finally {
-            // Elimina los archivos temporales creados
+            // Pase lo que pase, borramos los temporales para no dejar basura.
             eliminarTemporal(diccionarioTemporal);
             eliminarTemporal(grafoTemporal);
         }
@@ -391,6 +469,13 @@ public class GestorArchivo {
 
     /**
      * Verifica que todas las estaciones estén registradas en sus índices.
+     * <p>
+     * Si la estación está en la lista pero no en el índice del grafo (o en la
+     * tabla hash externa), algo ha fallado y no se debe guardar.
+     *
+     * @param grafo grafo que se quiere comprobar.
+     * @param tabla tabla hash externa a comparar (puede ser nula).
+     * @throws IOException si se encuentra alguna inconsistencia.
      */
     private void validarConsistencia(
             GrafoPonderado grafo,
@@ -421,6 +506,10 @@ public class GestorArchivo {
 
     /**
      * Escribe las estaciones en el archivo temporal del diccionario.
+     *
+     * @param archivo archivo temporal donde se escribirán los datos.
+     * @param grafo   grafo del que se obtienen las estaciones.
+     * @throws IOException si ocurre un error al escribir.
      */
     private void escribirEstaciones(
             File archivo, GrafoPonderado grafo) throws IOException {
@@ -443,6 +532,10 @@ public class GestorArchivo {
 
     /**
      * Escribe las conexiones en el archivo temporal del grafo.
+     *
+     * @param archivo archivo temporal donde se escribirán los datos.
+     * @param grafo   grafo del que se obtienen las conexiones.
+     * @throws IOException si ocurre un error al escribir.
      */
     private void escribirConexiones(
             File archivo, GrafoPonderado grafo) throws IOException {
@@ -465,7 +558,8 @@ public class GestorArchivo {
 
                     /*
                      * En redes no dirigidas se escribe una sola orientación
-                     * para evitar duplicar las conexiones inversas.
+                     * para evitar duplicar las conexiones inversas. Se usa
+                     * comparar() para elegir siempre la misma dirección.
                      */
                     if (grafo.esDirigido()
                             || conexion.getOrigen().comparar(
@@ -487,6 +581,15 @@ public class GestorArchivo {
 
     /**
      * Reemplaza los archivos originales creando respaldos de seguridad.
+     * <p>
+     * Antes de sobrescribir, se hace una copia de los archivos actuales.
+     * Si algo falla durante el reemplazo, se restauran esos respaldos.
+     *
+     * @param temporalDiccionario archivo temporal del diccionario.
+     * @param destinoDiccionario  archivo definitivo del diccionario.
+     * @param temporalGrafo       archivo temporal del grafo.
+     * @param destinoGrafo        archivo definitivo del grafo.
+     * @throws IOException si ocurre un error durante el proceso.
      */
     private void reemplazarArchivos(
             File temporalDiccionario,
@@ -535,7 +638,7 @@ public class GestorArchivo {
             );
             grafoReemplazado = true;
         } catch (IOException ex) {
-            // Restaura los archivos anteriores si ocurre una falla
+            // Restaura los archivos anteriores si ocurre una falla.
             if (diccionarioReemplazado) {
                 restaurarArchivo(
                         destinoDiccionario,
@@ -554,7 +657,7 @@ public class GestorArchivo {
             }
             throw ex;
         } finally {
-            // Elimina los archivos de respaldo temporales
+            // Elimina los archivos de respaldo temporales.
             eliminarTemporal(respaldoDiccionario);
             eliminarTemporal(respaldoGrafo);
         }
@@ -562,6 +665,13 @@ public class GestorArchivo {
 
     /**
      * Mueve un archivo temporal a su ubicación definitiva de forma segura.
+     * <p>
+     * Intenta usar un movimiento atómico, que no deja el archivo a medias.
+     * Si el sistema de archivos no lo soporta, hace un movimiento normal.
+     *
+     * @param origen  archivo temporal.
+     * @param destino archivo definitivo.
+     * @throws IOException si no se puede mover el archivo.
      */
     private void moverArchivo(File origen, File destino)
             throws IOException {
@@ -583,6 +693,14 @@ public class GestorArchivo {
 
     /**
      * Restaura un archivo desde su respaldo en caso de error.
+     * <p>
+     * Si el archivo no existía antes, simplemente se borra el que se había
+     * creado a medias.
+     *
+     * @param destino archivo que se quiere restaurar.
+     * @param respaldo archivo de respaldo (puede ser nulo).
+     * @param existia indica si el archivo original existía antes.
+     * @param causa excepción original a la que se le añadirá este error si falla.
      */
     private void restaurarArchivo(
             File destino,
@@ -600,12 +718,17 @@ public class GestorArchivo {
                 Files.deleteIfExists(destino.toPath());
             }
         } catch (IOException ex) {
+            // Si también falla la restauración, se añade a la excepción original.
             causa.addSuppressed(ex);
         }
     }
 
     /**
      * Abre un archivo CSV para lectura usando codificación UTF-8.
+     *
+     * @param ruta ruta del archivo que se quiere leer.
+     * @return lector configurado para el archivo.
+     * @throws IOException si la ruta no es válida o no se puede leer.
      */
     private BufferedReader abrirLectura(String ruta) throws IOException {
         if (ruta == null || ruta.trim().isEmpty()) {
@@ -627,6 +750,10 @@ public class GestorArchivo {
 
     /**
      * Abre un archivo para escritura usando codificación UTF-8.
+     *
+     * @param archivo archivo que se va a escribir.
+     * @return escritor configurado para el archivo.
+     * @throws IOException si no se puede abrir el archivo.
      */
     private BufferedWriter abrirEscritura(File archivo)
             throws IOException {
@@ -638,6 +765,14 @@ public class GestorArchivo {
 
     /**
      * Analiza un registro CSV interpretando campos entrecomillados.
+     * <p>
+     * Recorre la línea carácter a carácter controlando cuándo estamos dentro
+     * de comillas. Soporta comas dentro de un campo y comillas dobles
+     * escapadas ("") para representar una comilla literal.
+     *
+     * @param linea línea de texto en formato CSV.
+     * @return arreglo con las columnas ya separadas y limpias.
+     * @throws IOException si las comillas están mal puestas o falta cerrar alguna.
      */
     private String[] analizarLineaCSV(String linea) throws IOException {
         String[] columnas = new String[linea.length() + 1];
@@ -649,12 +784,13 @@ public class GestorArchivo {
             char actual = linea.charAt(i);
             if (dentroComillas) {
                 if (actual == '"') {
-                    // Maneja comillas dobles escapadas dentro del texto
+                    // Si hay dos comillas seguidas, es una comilla escapada.
                     if (i + 1 < linea.length()
                             && linea.charAt(i + 1) == '"') {
                         campo.append('"');
                         i++;
                     } else {
+                        // Si es una sola, se cierra el campo entrecomillado.
                         dentroComillas = false;
                         comillasCerradas = true;
                     }
@@ -663,11 +799,13 @@ public class GestorArchivo {
                 }
             } else {
                 if (actual == ',') {
+                    // Fin de la columna actual, pasamos a la siguiente.
                     columnas[cantidadColumnas++] =
                             campo.toString().trim();
                     campo.setLength(0);
                     comillasCerradas = false;
                 } else if (actual == '"') {
+                    // Solo se abre un campo entrecomillado si está al principio.
                     if (campo.toString().trim().isEmpty()
                             && !comillasCerradas) {
                         campo.setLength(0);
@@ -678,6 +816,7 @@ public class GestorArchivo {
                         );
                     }
                 } else if (comillasCerradas) {
+                    // Después de cerrar comillas solo puede haber espacios.
                     if (!Character.isWhitespace(actual)) {
                         throw new IOException(
                                 "Contenido después de cerrar un campo."
@@ -694,6 +833,8 @@ public class GestorArchivo {
             );
         }
         columnas[cantidadColumnas++] = campo.toString().trim();
+        
+        // Ajustamos el arreglo al tamaño real de columnas encontradas.
         String[] resultado = new String[cantidadColumnas];
         System.arraycopy(
                 columnas,
@@ -707,6 +848,9 @@ public class GestorArchivo {
 
     /**
      * Valida que el encabezado del diccionario contenga las 5 columnas.
+     *
+     * @param columnas columnas de la primera línea del archivo.
+     * @return {@code true} si el encabezado es correcto.
      */
     private boolean validarEncabezadoEstaciones(String[] columnas) {
         if (columnas.length != 5) {
@@ -722,6 +866,9 @@ public class GestorArchivo {
 
     /**
      * Valida que el encabezado de conexiones contenga los campos correctos.
+     *
+     * @param columnas columnas de la primera línea del archivo.
+     * @return {@code true} si el encabezado es correcto.
      */
     private boolean validarEncabezadoConexiones(String[] columnas) {
         if (columnas.length != 3) {
@@ -730,6 +877,8 @@ public class GestorArchivo {
         String origen = normalizarEncabezado(columnas[0]);
         String destino = normalizarEncabezado(columnas[1]);
         String tiempo = normalizarEncabezado(columnas[2]);
+
+        // Usamos contains para que acepte variaciones como "origen" o "ID_Origen".
         return origen.contains("origen")
                 && destino.contains("destino")
                 && tiempo.contains("tiempo");
@@ -737,10 +886,16 @@ public class GestorArchivo {
 
     /**
      * Normaliza un texto de encabezado para facilitar su comparación.
+     * <p>
+     * Quita tildes, espacios, guiones bajos y pasa todo a minúsculas para
+     * que "ID_Estacion", "id estación" o "IDESTACION" se consideren iguales.
+     *
+     * @param texto texto original del encabezado.
+     * @return texto normalizado para comparar.
      */
     private String normalizarEncabezado(String texto) {
         return texto.trim()
-                .replace("\uFEFF", "")
+                .replace("\uFEFF", "") // Quita el BOM que a veces añade Excel
                 .toLowerCase()
                 .replace("_", "")
                 .replace(" ", "")
@@ -754,6 +909,12 @@ public class GestorArchivo {
 
     /**
      * Escapa caracteres especiales para asegurar un formato CSV válido.
+     * <p>
+     * Si el texto contiene comas, comillas o saltos de línea, se encierra
+     * entre comillas dobles y se duplican las comillas internas.
+     *
+     * @param valor texto que se quiere escapar.
+     * @return texto listo para escribir en el CSV.
      */
     private String escaparCSV(String valor) {
         if (valor == null) {
@@ -772,6 +933,10 @@ public class GestorArchivo {
 
     /**
      * Valida que la ruta y el grafo recibidos no sean nulos o vacíos.
+     *
+     * @param ruta  ruta del archivo.
+     * @param grafo grafo a comprobar.
+     * @throws IllegalArgumentException si alguno no es válido.
      */
     private void validarParametros(
             String ruta, GrafoPonderado grafo) {
@@ -789,6 +954,9 @@ public class GestorArchivo {
 
     /**
      * Comprueba si una línea del archivo es un comentario o está vacía.
+     *
+     * @param linea línea que se quiere comprobar.
+     * @return {@code true} si la línea se debe ignorar.
      */
     private boolean esIgnorable(String linea) {
         String texto = linea.trim();
@@ -797,6 +965,9 @@ public class GestorArchivo {
 
     /**
      * Incrementa el contador de errores y reporta el mensaje a la ventana.
+     *
+     * @param numeroLinea número de la línea con error (0 si no aplica).
+     * @param contenido   texto descriptivo del problema.
      */
     private void reportarInvalida(
             int numeroLinea, String contenido) {
@@ -815,6 +986,8 @@ public class GestorArchivo {
 
     /**
      * Elimina un archivo temporal de forma segura si existe.
+     *
+     * @param archivo archivo que se quiere borrar.
      */
     private void eliminarTemporal(File archivo) {
         if (archivo != null && archivo.exists()) {
@@ -823,7 +996,9 @@ public class GestorArchivo {
     }
 
     /**
-     * Devuelve la cantidad de líneas inválidas registradas.
+     * Devuelve la cantidad de líneas inválidas registradas en la última carga.
+     *
+     * @return número de líneas omitidas.
      */
     public int getLineasInvalidas() {
         return lineasInvalidas;
@@ -831,6 +1006,8 @@ public class GestorArchivo {
 
     /**
      * Devuelve la ventana principal asociada.
+     *
+     * @return ventana utilizada para mostrar mensajes.
      */
     public VentanaPrincipal getVentana() {
         return ventana;
@@ -838,7 +1015,10 @@ public class GestorArchivo {
 
     /**
      * Asigna una nueva ventana principal para notificaciones.
+     *
+     * @param ventana nueva ventana principal.
      */
     public void setVentana(VentanaPrincipal ventana) {
         this.ventana = ventana;
     }
+}
