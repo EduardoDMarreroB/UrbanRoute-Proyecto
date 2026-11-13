@@ -7,33 +7,38 @@ public class Nodo<T> {
     // Enlace al proximo nodo de la lista (es null si es el ultimo)
     private Nodo<T> siguiente; 
 
-
-// Crea un nodo guardando el dato y sin apuntar a nadie mas todavia
+    /**
+     * Crea un nodo guardando el dato y sin apuntar a nadie mas todavia.
+     */
     public Nodo(T dato) {
         this.dato = dato; // Guardamos el elemento recibido
         this.siguiente = null; // Por ahora asume que no hay siguiente nodo
     }
 
-
-// Obtiene el dato que esta guardado en el nodo
+    /**
+     * Obtiene el dato que esta guardado en el nodo.
+     */
     public T getDato() {
         return dato;
     }
 
-
-// Cambia el dato guardado en el nodo por uno nuevo
+    /**
+     * Cambia el dato guardado en el nodo por uno nuevo.
+     */
     public void setDato(T dato) {
         this.dato = dato; // Actualizamos el dato
     }
 
-
-// Obtiene el nodo que le sigue a este
+    /**
+     * Obtiene el nodo que le sigue a este.
+     */
     public Nodo<T> getSiguiente() {
         return siguiente;
     }
 
-
-// Conecta este nodo con el nodo que le va a seguir en la lista
+    /**
+     * Conecta este nodo con el nodo que le va a seguir en la lista.
+     */
     public void setSiguiente(Nodo<T> siguiente) {
         this.siguiente = siguiente; // Hacemos la conexion
     }
