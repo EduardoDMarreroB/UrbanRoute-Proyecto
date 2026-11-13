@@ -1,9 +1,12 @@
 package urbanroute.tda;
 
-// Lista simplemente enlazada genérica implementada mediante nodos propios
+/**
+* Lista simplemente enlazada genérica implementada mediante nodos propios.
+*/ 
 public class ListaEnlazada<T> {
     private Nodo<T> cabeza; // Referencia al primer nodo de la lista
-    private Nodo<T> ultimo; // Referencia al último nodo de la lista para incorporaciones rápidas
+    private Nodo<T> ultimo; // Referencia al último nodo de la lista 
+                            // para incorporaciones rápidas
     private int tamano; // Cantidad de elementos almacenados en la lista
 
     /**
@@ -25,21 +28,22 @@ public class ListaEnlazada<T> {
             cabeza = nuevoNodo;
             ultimo = nuevoNodo;
         } else { // Si ya hay elementos en la lista
-            ultimo.setSiguiente(nuevoNodo); // Enlazamos el ultimo nodo actual con el nuevo
+            ultimo.setSiguiente(nuevoNodo); // Enlazamos el ultimo nodo 
+                                            // actual con el nuevo
             ultimo = nuevoNodo; // Actualizamos el puntero del ultimo nodo
         }
         tamano++; // Incrementamos la cantidad de elementos
     }
-    }
-
+    
     /**
      * Inserta un elemento al inicio de la lista.
      */
-    public void insertarInicio(T dato) { // El nuevo nodo apunta a la antigua cabeza
-        Nodo<T> nuevoNodo = new Nodo<>(dato); // la cabeza ahora es el nuevo nodo
+    public void insertarInicio(T dato) { // El nuevo nodo apunta a la 
+                                         // antigua cabeza
+        Nodo<T> nuevoNodo = new Nodo<>(dato); // la cabeza ahora es 
+                                              // el nuevo nodo
         nuevoNodo.setSiguiente(cabeza); 
         cabeza = nuevoNodo;
-
         if (ultimo == null) { // Si es el primer elemento insertado
             ultimo = nuevoNodo;
         }
@@ -54,7 +58,7 @@ public class ListaEnlazada<T> {
         for (Nodo<T> nodoActual = cabeza; 
              nodoActual != null; 
              nodoActual = nodoActual.getSiguiente()) {
-            if (sonIguales(nodoActual.getDato(), dato)) { // Encontramos el elemento
+            if (sonIguales(nodoActual.getDato(), dato)) { // Elemento obtenido
                 return nodoActual.getDato();
             }
         }
@@ -69,15 +73,14 @@ public class ListaEnlazada<T> {
         Nodo<T> nodoActual = cabeza;
 
         while (nodoActual != null) {
-            if (sonIguales(nodoActual.getDato(), dato)) { // Encontramos el nodo a eliminar
-                desvincularNodo(nodoAnterior, nodoActual); // Reenlazamos los nodos
+            if (sonIguales(nodoActual.getDato(), dato)) { // Nodo Encontrado
+                desvincularNodo(nodoAnterior, nodoActual); // Reenlazamos nodos
                 return true;
             }
             // Avanzamos al siguiente nodo en la lista
             nodoAnterior = nodoActual;
             nodoActual = nodoActual.getSiguiente();
         }
-
         return false; // El elemento no fue encontrado
     }
 
@@ -85,18 +88,16 @@ public class ListaEnlazada<T> {
      * Elimina el elemento ubicado en la posición indicada.
      */
     public void eliminarEn(int posicionLista) {
-        validarPosicion(posicionLista); // Verificamos que el indice exista
+        validarPosicion(posicionLista); // Verificamos que el índice exista
         Nodo<T> nodoAnterior = null;
         Nodo<T> nodoActual = cabeza;
         // Iteramos hasta llegar a la posicion exacta
         for (int indiceLista = 0;
              indiceLista < posicionLista;
              indiceLista++) {
-
             nodoAnterior = nodoActual;
             nodoActual = nodoActual.getSiguiente();
         }
-
         desvincularNodo(nodoAnterior, nodoActual); // Procedemos a desconectarlo
     }
 
@@ -105,14 +106,12 @@ public class ListaEnlazada<T> {
      */
     public T obtener(int posicionLista) {
         validarPosicion(posicionLista);
-
         Nodo<T> nodoActual = cabeza;
-
-        // avanzamos nodo por nodo hasta el indice deseado
+        // Avanzamos nodo por nodo hasta el indice deseado
         for (int indiceLista = 0; indiceLista < posicionLista; indiceLista++) {
             nodoActual = nodoActual.getSiguiente();
         }
-        return nodoActual.getDato(); // devolvemos el contenido
+        return nodoActual.getDato(); // Devolvemos el contenido
     }
 
     /**
@@ -149,7 +148,7 @@ public class ListaEnlazada<T> {
      * Comprueba que una posición se encuentre dentro de los límites.
      */
     private void validarPosicion(int posicionLista) {
-        if (posicionLista < 0 || posicionLista >= tamano) { // Validacion de limites
+        if (posicionLista < 0 || posicionLista >= tamano) { // Validamos límites
             throw new IndexOutOfBoundsException(
                     "Posición " + posicionLista + ", tamaño " + tamano
             );
@@ -163,15 +162,15 @@ public class ListaEnlazada<T> {
         if (nodoAnterior == null) { // Si estamos eliminando la cabeza
             cabeza = nodoActual.getSiguiente(); 
         } else { // Si es un nodo intermedio o final
-            // Conectamos el nodo anterior con el siguiente del eliminado
+                 // Conectamos el nodo anterior con el siguiente del eliminado
             nodoAnterior.setSiguiente(nodoActual.getSiguiente()); 
         }
         if (nodoActual == ultimo) { // Si eliminamos el ultimo nodo de la lista
-            ultimo = nodoAnterior; // El anterior pasa a ser el ultimo
+            ultimo = nodoAnterior;  // El anterior pasa a ser el ultimo
         }
         tamano--; // Reducimos la cantidad de elementos
 
-        if (tamano == 0) { // Si la lista quedo completamente vacia
+        if (tamano == 0) { // Si la lista quedo completamente vacía
             cabeza = null;
             ultimo = null;
         }
