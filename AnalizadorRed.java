@@ -8,20 +8,26 @@ import urbanroute.tda.Cola;
 import urbanroute.tda.ListaEnlazada;
 import urbanroute.tda.Nodo;
 
-// Analiza la red: busca rutas rapidas, agrupa subredes y halla estaciones clave
+/**
+ * Analiza la red: busca rutas rapidas, agrupa subredes y halla estaciones clave
+ */
 public class AnalizadorRed {
 
     private final GrafoPonderado grafo; // Mapa con estaciones y conexiones
     private VisualizadorGrafo visualizador; // Herramienta para dibujar la red
     private double ultimoTiempoRuta; // Minutos del ultimo viaje calculado
 
-    // Diccionario interno para ubicar cada estacion en el arreglo rapido
+    /**
+     * Diccionario interno para ubicar cada estacion en el arreglo rapido
+     */
     private static class IndiceVertices {
         private final String[] claves; // IDs de las estaciones
         private final int[] posiciones; // Posicion en el arreglo principal
         private final boolean[] ocupadas; // Indica si el espacio ya tiene uso
 
-        // Prepara los arreglos buscando un tamaño primo para evitar colisiones
+        /**
+         * Prepara los arreglos buscando un tamaño primo para evitar colisiones
+         */
         private IndiceVertices(int cantidad) {
             int capacidad = siguientePrimo(
                     Math.max(3, cantidad * 2 + 1)
@@ -31,7 +37,9 @@ public class AnalizadorRed {
             ocupadas = new boolean[capacidad];
         }
 
-        // Convierte el ID de texto en un numero de posicion mediante hash
+        /**
+         * Convierte el ID de texto en un numero de posicion mediante hash
+         */
         private int hash(String clave) {
             long resultado = 0;
             for (int i = 0; i < clave.length(); i++) {
@@ -41,8 +49,10 @@ public class AnalizadorRed {
             return (int) resultado;
         }
 
-// Guarda el ID y su posicion. Si hay colision (dos IDs tienen el
-// mismo indice), avanza buscando la siguiente casilla libre
+        /**
+         * Guarda el ID y su posicion. Si hay colision (dos IDs tienen el
+         * mismo indice), avanza buscando la siguiente casilla libre
+         */
         private void insertar(String clave, int posicion) {
             int indice = hash(clave);
 
@@ -59,7 +69,9 @@ public class AnalizadorRed {
             ocupadas[indice] = true;
         }
 
-        // Busca en que posicion del arreglo esta una estacion usando su ID
+        /**
+         * Busca en que posicion del arreglo esta una estacion usando su ID
+         */
         private int buscar(String clave) {
             if (clave == null) {
                 return -1;
@@ -81,7 +93,9 @@ public class AnalizadorRed {
             return -1; // Espacio vacio
         }
 
-        // Busca un numero primo igual o mayor al valor indicado
+        /**
+         * Busca un numero primo igual o mayor al valor indicado
+         */
         private static int siguientePrimo(int numero) {
             int candidato = numero;
 
@@ -97,7 +111,9 @@ public class AnalizadorRed {
             return candidato;
         }
 
-        // Verifica si un numero entero dado es primo
+        /**
+         * Verifica si un numero entero dado es primo
+         */
         private static boolean esPrimo(int numero) {
             if (numero < 2) {
                 return false;
@@ -113,7 +129,9 @@ public class AnalizadorRed {
         }
     }
 
-    // Constructor: prepara el analizador validando que el grafo no sea nulo
+    /**
+     * Constructor: prepara el analizador validando que el grafo no sea nulo
+     */
     public AnalizadorRed(GrafoPonderado grafo) {
         if (grafo == null) {
             throw new IllegalArgumentException(
@@ -125,7 +143,9 @@ public class AnalizadorRed {
         this.visualizador = null;
     }
 
-    // Busca una estacion en el mapa limpiando espacios extra en el ID
+    /**
+     * Busca una estacion en el mapa limpiando espacios extra en el ID
+     */
     public Estacion buscarEstacion(String id) {
         if (id == null || id.trim().isEmpty()) {
             return null;
@@ -133,7 +153,9 @@ public class AnalizadorRed {
         return grafo.buscarEstacion(id.trim());
     }
 
-    // Calcula la ruta mas rapida entre dos estaciones usando Dijkstra
+    /**
+     * Calcula la ruta mas rapida entre dos estaciones usando Dijkstra
+     */
     public ListaEnlazada<Estacion> dijkstra(
             String origen, String destino) {
 
@@ -248,25 +270,33 @@ public class AnalizadorRed {
         return ruta;
     }
 
-    // Detecta todas las subredes conectadas en el mapa completo
+    /**
+     * Detecta todas las subredes conectadas en el mapa completo
+     */
     public ListaEnlazada<ListaEnlazada<Estacion>>
             detectarSubredesBFS() {
         return agruparSubredes(null, null);
     }
 
-    // Simula el cierre de una estacion y muestra como quedan las subredes
+    /**
+     * Simula el cierre de una estacion y muestra como quedan las subredes
+     */
     public ListaEnlazada<ListaEnlazada<Estacion>>
             detectarSubredesSinEstacion(String idEstacion) {
         return agruparSubredes(idEstacion, null);
     }
 
-    // Simula el cierre de una linea completa y muestra las subredes
+    /**
+     * Simula el cierre de una linea completa y muestra las subredes
+     */
     public ListaEnlazada<ListaEnlazada<Estacion>>
             detectarSubredesSinLinea(String linea) {
         return agruparSubredes(null, linea);
     }
 
-    // Recorre el grafo a lo ancho (BFS) desde una estacion inicial
+    /**
+     * Recorre el grafo a lo ancho (BFS) desde una estacion inicial
+     */
     public ListaEnlazada<Estacion> bfs(Estacion inicio) {
         ListaEnlazada<Estacion> resultado = new ListaEnlazada<>();
 
@@ -315,7 +345,9 @@ public class AnalizadorRed {
         return resultado;
     }
 
-    // Recorre el grafo en profundidad (DFS) usando una pila manual
+    /**
+     * Recorre el grafo en profundidad (DFS) usando una pila manual
+     */
     public ListaEnlazada<Estacion> dfs(Estacion inicio) {
         ListaEnlazada<Estacion> resultado = new ListaEnlazada<>();
 
@@ -364,7 +396,9 @@ public class AnalizadorRed {
         return resultado;
     }
 
-    // Obtiene las k estaciones con mayor cantidad de conexiones (hubs)
+    /**
+     * Obtiene las k estaciones con mayor cantidad de conexiones (hubs)
+     */
     public ListaEnlazada<Estacion> calcularCentralidadGrado(int k) {
         Estacion[] estaciones = obtenerVertices();
         int cantidad = estaciones.length;
@@ -399,7 +433,9 @@ public class AnalizadorRed {
         return hubs;
     }
 
-    // Agrupa las estaciones en subredes ignorando elementos excluidos
+    /**
+     * Agrupa las estaciones en subredes ignorando elementos excluidos
+     */
     private ListaEnlazada<ListaEnlazada<Estacion>>
             agruparSubredes(String idAusente, String lineaAusente) {
 
@@ -453,7 +489,9 @@ public class AnalizadorRed {
         return subredes;
     }
 
-    // Construye listas de conexiones entrantes para grafos dirigidos
+    /**
+     * Construye listas de conexiones entrantes para grafos dirigidos
+     */
     @SuppressWarnings("unchecked")
     private ListaEnlazada<Integer>[] construirConexionesEntrantes(
             Estacion[] vertices, IndiceVertices indiceVertices) {
@@ -487,7 +525,9 @@ public class AnalizadorRed {
         return entrantes;
     }
 
-    // Recorre un componente conexo usando BFS respetando exclusiones
+    /**
+     * Recorre un componente conexo usando BFS respetando exclusiones
+     */
     private ListaEnlazada<Estacion> recorrerComponente(
             int inicio,
             Estacion[] vertices,
@@ -560,7 +600,9 @@ public class AnalizadorRed {
         return resultado;
     }
 
-    // Convierte la lista de estaciones del grafo en un arreglo simple
+    /**
+     * Convierte la lista de estaciones del grafo en un arreglo simple
+     */
     private Estacion[] obtenerVertices() {
         ListaEnlazada<Estacion> lista = grafo.getEstaciones();
         Estacion[] vertices = new Estacion[lista.obtenerTamano()];
@@ -574,7 +616,9 @@ public class AnalizadorRed {
         return vertices;
     }
 
-    // Construye el indice auxiliar con las posiciones de cada estacion
+    /**
+     * Construye el indice auxiliar con las posiciones de cada estacion
+     */
     private IndiceVertices construirIndice(Estacion[] vertices) {
         IndiceVertices indice = new IndiceVertices(vertices.length);
         for (int i = 0; i < vertices.length; i++) {
@@ -583,7 +627,9 @@ public class AnalizadorRed {
         return indice;
     }
 
-    // Busca el indice de la estacion no visitada con menor distancia
+    /**
+     * Busca el indice de la estacion no visitada con menor distancia
+     */
     private int buscarMinimo(
             double[] distancia, boolean[] visitado) {
 
@@ -599,7 +645,9 @@ public class AnalizadorRed {
         return mejor; // Retorna -1 si no quedan estaciones alcanzables
     }
 
-    // Verifica que la estacion exista y sea la misma instancia del grafo
+    /**
+     * Verifica que la estacion exista y sea la misma instancia del grafo
+     */
     private boolean perteneceAlGrafo(Estacion estacion) {
         if (estacion == null) {
             return false;
@@ -607,7 +655,9 @@ public class AnalizadorRed {
         return grafo.buscarEstacion(estacion.getId()) == estacion;
     }
 
-    // Comprueba si una estacion debe excluirse por ID o por linea
+    /**
+     * Comprueba si una estacion debe excluirse por ID o por linea
+     */
     private boolean estaAusente(
             Estacion estacion,
             String idAusente,
@@ -624,22 +674,30 @@ public class AnalizadorRed {
                 && estacion.getLinea().equals(lineaAusente.trim());
     }
 
-    // Devuelve el grafo asociado al analizador
+    /**
+     * Devuelve el grafo asociado al analizador
+     */
     public GrafoPonderado getGrafo() {
         return grafo;
     }
 
-    // Devuelve el visualizador asociado, si existe
+    /**
+     * Devuelve el visualizador asociado, si existe
+     */
     public VisualizadorGrafo getVisualizador() {
         return visualizador;
     }
 
-    // Asocia un visualizador grafico al analizador
+    /**
+     * Asocia un visualizador grafico al analizador
+     */
     public void setVisualizador(VisualizadorGrafo visualizador) {
         this.visualizador = visualizador;
     }
 
-    // Devuelve el tiempo total en minutos de la ultima ruta calculada
+    /**
+     * Devuelve el tiempo total en minutos de la ultima ruta calculada
+     */
     public double getUltimoTiempoRuta() {
         return ultimoTiempoRuta;
     }
