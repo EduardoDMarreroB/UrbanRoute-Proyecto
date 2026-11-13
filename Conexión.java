@@ -6,8 +6,9 @@ public class Conexion {
     private final Estacion destino; // Estacion a la que llega el viaje
     private double tiempo; // Minutos que tarda en hacer ese recorrido
 
-
-// Crea una conexion entre dos estaciones indicando el tiempo que tardan
+    /**
+     * Crea una conexion entre dos estaciones indicando el tiempo que tardan
+     */
     public Conexion(Estacion origen, Estacion destino, double tiempo) {
         if (origen == null || destino == null) { // Si nos falta una estacion
             throw new IllegalArgumentException(
@@ -22,33 +23,38 @@ public class Conexion {
         this.tiempo = tiempo;
     }
 
-
-// Te dice de que estacion sale esta conexion
+    /**
+     * Te dice de que estacion sale esta conexion
+     */
     public Estacion getOrigen() {
         return origen;
     }
 
-
-// Te dice a que estacion llega esta conexion
+    /**
+     * Te dice a que estacion llega esta conexion
+     */
     public Estacion getDestino() {
         return destino;
     }
 
-
-// Te dice cuantos minutos dura el viaje
+    /**
+     * Te dice cuantos minutos dura el viaje
+     */
     public double getTiempo() {
         return tiempo;
     }
 
-
-// Cambia el tiempo que dura el viaje por uno nuevo
+    /**
+     * Cambia el tiempo que dura el viaje por uno nuevo
+     */
     public void setTiempo(double tiempo) {
         validarTiempo(tiempo); // Volvemos a revisar que no pongan locuras
         this.tiempo = tiempo;
     }
 
-
-// Revisa que el tiempo no sea negativo, infinito o un error matematico
+    /**
+     * Revisa que el tiempo no sea negativo, infinito o un error matematico
+     */
     private void validarTiempo(double tiempo) {
         // Si el tiempo es un error, es infinito o es menor a cero
         if (Double.isNaN(tiempo) || Double.isInfinite(tiempo)
@@ -60,8 +66,9 @@ public class Conexion {
         }
     }
 
-
-// Le pasas una de las dos estaciones y te devuelve la otra
+    /**
+     * Le pasas una de las dos estaciones y te devuelve la otra
+     */
     public Estacion getOtroExtremo(Estacion estacion) {
         if (estacion == null) { // Si no pasaron ninguna estacion
             throw new IllegalArgumentException(
@@ -83,16 +90,18 @@ public class Conexion {
         );
     }
 
-
-// Prepara los datos separados por comas para guardarlos en un archivo
+    /**
+     * Prepara los datos separados por comas para guardarlos en un archivo
+     */
     public String toCSVString() {
         return origen.getId() + ","
                 + destino.getId() + ","
                 + tiempo;
     }
 
-
-// Compara si dos conexiones son la misma (el tiempo no importa aqui)
+    /**
+     * Compara si dos conexiones son la misma (el tiempo no importa aqui)
+     */
     @Override
     public boolean equals(Object objeto) {
         if (this == objeto) { // Si es exactamente la misma en memoria
@@ -110,8 +119,9 @@ public class Conexion {
                 && destino.equals(otra.destino);
     }
 
-
-// Muestra la conexion de forma linda, ejemplo: A -> B (5.0)
+    /**
+     * Muestra la conexion de forma linda, ejemplo: A -> B (5.0)
+     */
     @Override
     public String toString() {
         return origen.getId() + " -> "
