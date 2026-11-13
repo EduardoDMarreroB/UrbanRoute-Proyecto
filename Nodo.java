@@ -9,11 +9,11 @@ public class Nodo<T> {
     // Crea un nodo con el dato indicado y sin sucesor
     public Nodo(T dato) {
         this.dato = dato; // guardamos el elemento
-        this.siguiente = null; // por defecto asume que no hay siguiente
+        this.siguiente = null; // Se asume que no hay siguiente
     }
 
     public T getDato() {
-        return dato; // retorna el contenido actual del nodo
+        return dato; // Retorna el contenido actual del nodo
     }
 
     public void setDato(T dato) {
@@ -21,10 +21,10 @@ public class Nodo<T> {
     }
 
     public Nodo<T> getSiguiente() {
-        return siguiente; // retorna el enlace al próximo nodo
+        return siguiente; // Retorna el enlace al próximo nodo
     }
 
     public void setSiguiente(Nodo<T> siguiente) {
-        this.siguiente = siguiente; // conectamos este nodo con el sucesor
+        this.siguiente = siguiente; // Conectamos este nodo con el sucesor
     }
 }
