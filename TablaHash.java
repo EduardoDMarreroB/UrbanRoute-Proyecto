@@ -21,6 +21,10 @@ public class TablaHash {
      * reduciendo significativamente la probabilidad y frecuencia de colisiones 
      * en comparación con el uso de números compuestos o pares, lo que a su vez 
      * retrasa el costoso proceso de redimensionar o agrandar (rehashing).
+     * private' porque es una configuración 
+     * estrictamente interna. 
+     * "Private" para proteger la abstracción matemática de la tabla y evitar 
+     * que otras partes del programa dependan de este valor o lo alteren.
      */
     private static final int capacidad_Inicial = 101; 
     
@@ -31,11 +35,15 @@ public class TablaHash {
      * entre el costo de tiempo (búsquedas rápidas con pocas colisiones) 
      * y el costo de espacio (memoria utilizada). Cuando la cantidad de 
      * elementos supere el 75% de la capacidad, la tabla deberá agrandarse.
+     * "Private" para garantizar que ninguna clase externa modifique este límite
+     * y rompa la lógica del rehashing.
      */
     private static final double factor_Carga_Maximo = 0.75;
 
     /**
      * Guarda el par de datos: el ID (clave) y la estación.
+     * "Private" porque al exponerla rompería la abstracción, obligando al 
+     * usuario externo a conocer cómo se manejan internamente las colisiones.
     */
     private static class Entrada {
         private final String clave; // ID de la estacion
@@ -56,6 +64,9 @@ public class TablaHash {
      * Si dos IDs diferentes obtienen el mismo número de posición tras la 
      * operación matemática, no se pierden los datos, sino que mabas estaciones 
      * se guardan en esta lista.
+     * "Private" para evitar que código externo acceda a la memoria 
+     * directamente, borre nodos o modifique el arreglo saltándose los métodos 
+     * seguros ya establecidos (insertar/eliminar).
     */
     private ListaEnlazada<Entrada>[] casillas;
     private int tamano; // Cantidad de estaciones guardadas en total (tamaño)
