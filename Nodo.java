@@ -4,9 +4,14 @@ package urbanroute.tda;
      * Representa un nodo o eslabon de una lista simple.
      */
 public class Nodo<T> {
-    private T dato; // Dato guardado en este nodo
+    /**
+     * Dato guardado en el nodo.
+     */
+    private T dato;
     
-    // Enlace al proximo nodo de la lista (es null si es el último)
+    /**
+     * Enlace al proximo nodo de la lista. Apunta a null si es el último.
+    */
     private Nodo<T> siguiente; 
 
     /**
@@ -18,7 +23,7 @@ public class Nodo<T> {
     }
 
     /**
-     * Obtiene el dato que esta guardado en el nodo.
+     * Obtiene el dato que está guardado en el nodo.
      */
     public T getDato() {
         return dato;
