@@ -2,24 +2,27 @@ package urbanroute.modelo;
 
 import urbanroute.tda.ListaEnlazada;
 
-// Representa una estacion de la red de transporte
+/**
+ * Representa una estación de la red de transporte.
+ */
 public class Estacion {
-    private final String id; // ID unico de la estacion que no cambia
-    private String nombre; // Nombre de la estacion
-    private String linea; // Linea a la que pertenece
-    private String zona; // Zona geografica donde esta ubicada
-    private int capacidad; // Cantidad maxima de pasajeros por hora
-    
-    // Lista con las conexiones de la estacion
-    private final ListaEnlazada<Conexion> conexiones; 
+
+    private final String id; // ID único de la estación que no cambia
+    private String nombre; // Nombre de la estación
+    private String linea; // Línea a la que pertenece
+    private String zona; // Zona geográfica donde está ubicada
+    private int capacidad; // Cantidad máxima de pasajeros por hora
+
+    // Lista con las conexiones de la estación
+    private final ListaEnlazada<Conexion> conexiones;
 
     /**
-     * Crea una estacion con sus datos y prepara su lista de conexiones.
+     * Crea una estación con sus datos y prepara su lista de conexiones.
      */
-    public Estacion(String id, String nombre, String linea, String zona, 
+    public Estacion(String id, String nombre, String linea, String zona,
                     int capacidad) {
-        
-        // Verificamos que los textos ingresados sean validos
+
+        // Verificamos que los textos ingresados sean válidos
         validarTexto(id, "El ID");
         validarTexto(nombre, "El nombre");
         validarTexto(linea, "La línea");
@@ -31,11 +34,11 @@ public class Estacion {
         this.linea = linea.trim();
         this.zona = zona.trim();
         this.capacidad = capacidad;
-        this.conexiones = new ListaEnlazada<>(); // Empezamos con lista vacia
+        this.conexiones = new ListaEnlazada<>(); // Empezamos con lista vacía
     }
 
     /**
-     * Revisa que un texto no sea nulo ni este vacio.
+     * Revisa que un texto no sea nulo ni esté vacío.
      */
     private void validarTexto(String valor, String campo) {
         if (valor == null || valor.trim().isEmpty()) { // Si el texto no sirve
@@ -46,10 +49,10 @@ public class Estacion {
     }
 
     /**
-     * Revisa que la capacidad sea un numero positivo.
+     * Revisa que la capacidad sea un número positivo.
      */
     private void validarCapacidad(int capacidad) {
-        if (capacidad < 0) { // No aceptamos numeros negativos
+        if (capacidad < 0) { // No aceptamos números negativos
             throw new IllegalArgumentException(
                     "La capacidad no puede ser negativa."
             );
@@ -57,21 +60,21 @@ public class Estacion {
     }
 
     /**
-     * Obtiene el ID de la estacion.
+     * Obtiene el ID de la estación.
      */
     public String getId() {
         return id;
     }
 
     /**
-     * Obtiene el nombre de la estacion.
+     * Obtiene el nombre de la estación.
      */
     public String getNombre() {
         return nombre;
     }
 
     /**
-     * Cambia el nombre de la estacion.
+     * Cambia el nombre de la estación.
      */
     public void setNombre(String nombre) {
         validarTexto(nombre, "El nombre");
@@ -79,14 +82,14 @@ public class Estacion {
     }
 
     /**
-     * Obtiene la linea a la que pertenece.
+     * Obtiene la línea a la que pertenece.
      */
     public String getLinea() {
         return linea;
     }
 
     /**
-     * Cambia la linea de la estacion.
+     * Cambia la línea de la estación.
      */
     public void setLinea(String linea) {
         validarTexto(linea, "La línea");
@@ -94,14 +97,14 @@ public class Estacion {
     }
 
     /**
-     * Obtiene la zona donde esta la estacion.
+     * Obtiene la zona donde está la estación.
      */
     public String getZona() {
         return zona;
     }
 
     /**
-     * Cambia la zona de la estacion.
+     * Cambia la zona de la estación.
      */
     public void setZona(String zona) {
         validarTexto(zona, "La zona");
@@ -124,24 +127,24 @@ public class Estacion {
     }
 
     /**
-     * Obtiene la lista de conexiones de la estacion.
+     * Obtiene la lista de conexiones de la estación.
      */
     public ListaEnlazada<Conexion> getConexiones() {
         return conexiones;
     }
 
     /**
-     * Obtiene la cantidad de conexiones que tiene la estacion.
+     * Obtiene la cantidad de conexiones que tiene la estación.
      */
     public int getGrado() {
         return conexiones.obtenerTamano();
     }
 
     /**
-     * Compara esta estacion con otra usando el ID alfabeticamente.
+     * Compara esta estación con otra usando el ID alfabéticamente.
      */
     public int comparar(Estacion otra) {
-        if (otra == null) { // Si la otra estacion no existe
+        if (otra == null) { // Si la otra estación no existe
             throw new IllegalArgumentException(
                     "La estación a comparar no existe."
             );
@@ -153,11 +156,11 @@ public class Estacion {
      * Arregla el texto para no dar errores al guardarlo en un archivo CSV.
      */
     private String escaparCSV(String valor) {
-        if (valor == null) { // Si no hay texto, devolvemos un texto vacio
+        if (valor == null) { // Si no hay texto, devolvemos vacío
             return "";
         }
 
-        // Si tiene comas o saltos de linea, lo encerramos en comillas dobles
+        // Si tiene comas o saltos de línea, lo encerramos en comillas dobles
         if (valor.contains(",") || valor.contains("\"")
                 || valor.contains("\n") || valor.contains("\r")) {
             return "\"" + valor.replace("\"", "\"\"") + "\"";
@@ -166,7 +169,7 @@ public class Estacion {
     }
 
     /**
-     * Convierte los datos de la estacion en una linea separada por comas.
+     * Convierte los datos de la estación en una línea separada por comas.
      */
     public String toCSVString() {
         return escaparCSV(id) + ","
@@ -180,21 +183,20 @@ public class Estacion {
      * Revisa si dos estaciones son la misma usando su ID.
      */
     public boolean equals(Object objeto) {
-        if (this == objeto) { // Si es exactamente la misma estacion en memoria
+        if (this == objeto) { // Si es exactamente la misma en memoria
             return true;
         }
 
-        // Si lo que comparamos no es una estacion
-        if (!(objeto instanceof Estacion)) { 
+        if (!(objeto instanceof Estacion)) { // Si no es una estación
             return false;
         }
 
-        Estacion otra = (Estacion) objeto; // Convertimos el objeto a Estacion
+        Estacion otra = (Estacion) objeto; // Conversión segura
         return id.equals(otra.id); // Comparamos los IDs
     }
 
     /**
-     * Muestra el nombre de la estacion junto con su ID.
+     * Muestra el nombre de la estación junto con su ID.
      */
     public String toString() {
         return nombre + " [" + id + "]";
