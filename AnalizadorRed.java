@@ -23,6 +23,7 @@ public class AnalizadorRed {
         private final int[] posiciones;
         private final boolean[] ocupadas;
 
+        // Prepara los espacios buscando un tamaño primo para evitar choques
         private IndiceVertices(int cantidad) {
             int capacidad = siguientePrimo(
                     Math.max(3, cantidad * 2 + 1)
@@ -32,6 +33,7 @@ public class AnalizadorRed {
             ocupadas = new boolean[capacidad];
         }
 
+        // Convierte el texto del ID en un número para ubicarlo rápido
         private int hash(String clave) {
             long resultado = 0;
             for (int i = 0; i < clave.length(); i++) {
@@ -41,6 +43,7 @@ public class AnalizadorRed {
             return (int) resultado;
         }
 
+        // Guarda la clave y posición; si hay choque, avanza a la siguiente libre
         private void insertar(String clave, int posicion) {
             int indice = hash(clave);
             while (ocupadas[indice]) {
@@ -55,6 +58,7 @@ public class AnalizadorRed {
             ocupadas[indice] = true;
         }
 
+        // Busca la posición del arreglo usando el ID de la estación
         private int buscar(String clave) {
             if (clave == null) {
                 return -1;
@@ -73,6 +77,7 @@ public class AnalizadorRed {
             return -1;
         }
 
+        // Busca el siguiente número primo para el tamaño del diccionario
         private static int siguientePrimo(int numero) {
             int candidato = numero;
             if (candidato <= 2) {
@@ -87,6 +92,7 @@ public class AnalizadorRed {
             return candidato;
         }
 
+        // Revisa si un número entero es primo probando divisiones
         private static boolean esPrimo(int numero) {
             if (numero < 2) {
                 return false;
@@ -169,8 +175,8 @@ public class AnalizadorRed {
             ListaEnlazada<Conexion> vecinos =
                     grafo.obtenerVecinos(vertices[u]);
             for (Nodo<Conexion> nodo = vecinos.getCabeza();
-                 nodo != null;
-                 nodo = nodo.getSiguiente()) {
+                  nodo != null;
+                  nodo = nodo.getSiguiente()) {
                 Conexion conexion = nodo.getDato();
                 int v = indiceVertices.buscar(
                         conexion.getDestino().getId()
@@ -251,8 +257,8 @@ public class AnalizadorRed {
             ListaEnlazada<Conexion> vecinos =
                     grafo.obtenerVecinos(vertices[actual]);
             for (Nodo<Conexion> nodo = vecinos.getCabeza();
-                 nodo != null;
-                 nodo = nodo.getSiguiente()) {
+                  nodo != null;
+                  nodo = nodo.getSiguiente()) {
                 Conexion conexion = nodo.getDato();
                 int posicionVecino = indiceVertices.buscar(
                         conexion.getDestino().getId()
@@ -292,8 +298,8 @@ public class AnalizadorRed {
             ListaEnlazada<Conexion> vecinos =
                     grafo.obtenerVecinos(vertices[actual]);
             for (Nodo<Conexion> nodo = vecinos.getCabeza();
-                 nodo != null;
-                 nodo = nodo.getSiguiente()) {
+                  nodo != null;
+                  nodo = nodo.getSiguiente()) {
                 Conexion conexion = nodo.getDato();
                 int posicionVecino = indiceVertices.buscar(
                         conexion.getDestino().getId()
@@ -339,7 +345,7 @@ public class AnalizadorRed {
         return hubs;
     }
 
-    // Agrupa estaciones en subredes ignorando exclusiones
+    // Agrupa las estaciones en subredes saltando las que estén excluidas
     private ListaEnlazada<ListaEnlazada<Estacion>>
             agruparSubredes(String idAusente, String lineaAusente) {
         ListaEnlazada<ListaEnlazada<Estacion>> subredes =
@@ -377,7 +383,7 @@ public class AnalizadorRed {
         return subredes;
     }
 
-    // Construye listas de conexiones entrantes para grafos dirigidos
+    // Crea listas con las conexiones que llegan a cada vértice (para dirigidos)
     private ListaEnlazada<Integer>[] construirConexionesEntrantes(
             Estacion[] vertices, IndiceVertices indiceVertices) {
         ListaEnlazada<Integer>[] entrantes = crearArregloListas(vertices.length);
@@ -388,8 +394,8 @@ public class AnalizadorRed {
             ListaEnlazada<Conexion> vecinos =
                     grafo.obtenerVecinos(vertices[i]);
             for (Nodo<Conexion> nodo = vecinos.getCabeza();
-                 nodo != null;
-                 nodo = nodo.getSiguiente()) {
+                  nodo != null;
+                  nodo = nodo.getSiguiente()) {
                 Conexion conexion = nodo.getDato();
                 int destino = indiceVertices.buscar(
                         conexion.getDestino().getId()
@@ -402,7 +408,7 @@ public class AnalizadorRed {
         return entrantes;
     }
 
-    // Método auxiliar para inicializar arreglos de listas sin alertas de tipo
+    // Método auxiliar para armar arreglos de listas de forma limpia
     private ListaEnlazada<Integer>[] crearArregloListas(int tamano) {
         Object[] arreglo = new Object[tamano];
         for (int i = 0; i < tamano; i++) {
@@ -411,7 +417,7 @@ public class AnalizadorRed {
         return (ListaEnlazada<Integer>[]) arreglo;
     }
 
-    // Recorre un componente combinando BFS saliente y entrante
+    // Recorre una subred usando BFS tanto por salidas como por entradas
     private ListaEnlazada<Estacion> recorrerComponente(
             int inicio,
             Estacion[] vertices,
@@ -433,8 +439,8 @@ public class AnalizadorRed {
             
             // Explora las conexiones salientes (hacia adelante)
             for (Nodo<Conexion> nodo = vecinos.getCabeza();
-                 nodo != null;
-                 nodo = nodo.getSiguiente()) {
+                  nodo != null;
+                  nodo = nodo.getSiguiente()) {
                 Conexion conexion = nodo.getDato();
                 int posicionVecino = indiceVertices.buscar(
                         conexion.getDestino().getId()
@@ -456,8 +462,8 @@ public class AnalizadorRed {
             // que el BFS detecte la subred de forma bidireccional.
             if (entrantes != null) {
                 for (Nodo<Integer> nodo = entrantes[actual].getCabeza();
-                     nodo != null;
-                     nodo = nodo.getSiguiente()) {
+                      nodo != null;
+                      nodo = nodo.getSiguiente()) {
                     int posicionVecino = nodo.getDato();
                     if (asignadas[posicionVecino]) {
                         continue;
@@ -474,18 +480,20 @@ public class AnalizadorRed {
         return resultado;
     }
 
+    // Pasa las estaciones de la lista a un arreglo plano para trabajar rápido
     private Estacion[] obtenerVertices() {
         ListaEnlazada<Estacion> lista = grafo.getEstaciones();
         Estacion[] vertices = new Estacion[lista.obtenerTamano()];
         int i = 0;
         for (Nodo<Estacion> nodo = lista.getCabeza();
-             nodo != null;
-             nodo = nodo.getSiguiente()) {
+              nodo != null;
+              nodo = nodo.getSiguiente()) {
             vertices[i++] = nodo.getDato();
         }
         return vertices;
     }
 
+    // Llena el diccionario rápido con los IDs y posiciones de las estaciones
     private IndiceVertices construirIndice(Estacion[] vertices) {
         IndiceVertices indice = new IndiceVertices(vertices.length);
         for (int i = 0; i < vertices.length; i++) {
@@ -494,6 +502,7 @@ public class AnalizadorRed {
         return indice;
     }
 
+    // Busca la estación no visitada con menor distancia para Dijkstra
     private int buscarMinimo(
             double[] distancia, boolean[] visitado) {
         int mejor = -1;
@@ -507,6 +516,7 @@ public class AnalizadorRed {
         return mejor;
     }
 
+    // Revisa si la estación existe y pertenece al grafo actual
     private boolean perteneceAlGrafo(Estacion estacion) {
         if (estacion == null) {
             return false;
@@ -514,6 +524,7 @@ public class AnalizadorRed {
         return grafo.buscarEstacion(estacion.getId()) == estacion;
     }
 
+    // Revisa si una estación está excluida por ID o por línea
     private boolean estaAusente(
             Estacion estacion,
             String idAusente,
