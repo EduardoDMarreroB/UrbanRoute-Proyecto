@@ -6,14 +6,14 @@ import urbanroute.tda.Nodo;
 
 /**
  * Grafo ponderado con listas de adyacencia.
- * <p>
- * Guarda todas las estaciones en una {@link ListaEnlazada} y usa una
- * {@link TablaHash} para encontrarlas rápidamente por su ID. Cada estación
- * tiene su propia lista de conexiones, así que el grafo se representa como
- * una lista de adyacencia.
- * <p>
- * Por defecto el grafo no es dirigido: cuando se agrega una conexión, se
- * guarda también en el sentido contrario para que se pueda recorrer en ambos
+ * 
+ * Guarda todas las estaciones en una lista enlazada y usa una tabla hash
+ * para encontrarlas rapidamente por su ID. Cada estacion tiene su propia
+ * lista de conexiones, asi que el grafo se representa como una lista
+ * de adyacencia.
+ * 
+ * Por defecto el grafo no es dirigido: cuando se agrega una conexion, se
+ * guarda tambien en el sentido contrario para poder recorrerlo en ambos
  * sentidos.
  */
 public class GrafoPonderado {
@@ -28,11 +28,8 @@ public class GrafoPonderado {
     private boolean dirigido;
 
     /**
-     * Crea un grafo ponderado indicando si es dirigido o no.
-     *
-     * @param indice   tabla hash que se usará para buscar estaciones por ID.
-     * @param dirigido {@code true} si el grafo es dirigido; {@code false} si es no dirigido.
-     * @throws IllegalArgumentException si la tabla hash es {@code null}.
+     * Crea un grafo ponderado indicando si es dirigido o no. Requiere una 
+     * tabla hash inicializada. Lanza un error si la tabla hash es nula.
      */
     public GrafoPonderado(TablaHash indice, boolean dirigido) {
         if (indice == null) {
@@ -40,29 +37,23 @@ public class GrafoPonderado {
                     "La tabla hash no puede ser nula."
             );
         }
-        this.estaciones = new ListaEnlazada();
+        this.estaciones = new ListaEnlazada<>();
         this.indice = indice;
         this.dirigido = dirigido;
     }
 
     /**
-     * Construye un grafo ponderado no dirigido.
-     * <p>
-     * Usa el índice de la tabla hash para buscar las estaciones por su ID.
-     *
-     * @param indice tabla hash que se usará para buscar estaciones por ID.
+     * Construye un grafo ponderado no dirigido por defecto, usando el indice 
+     * proporcionado para buscar las estaciones.
      */
     public GrafoPonderado(TablaHash indice) {
         this(indice, false);
     }
 
     /**
-     * Agrega una estación al grafo y a la tabla hash.
-     * <p>
-     * No se permite agregar una estación nula ni una cuyo ID ya exista.
-     *
-     * @param e estación que se quiere agregar.
-     * @return {@code true} si se agregó; {@code false} si era {@code null} o el ID ya existía.
+     * Agrega una estacion al grafo y a la tabla hash. No se permite agregar 
+     * una estacion nula ni una cuyo ID ya exista. Devuelve verdadero si la 
+     * operacion fue exitosa, o falso si fue rechazada.
      */
     public boolean agregarEstacion(Estacion e) {
         if (e == null || estaciones.buscar(e) != null) {
@@ -74,14 +65,9 @@ public class GrafoPonderado {
     }
 
     /**
-     * Elimina una estación del grafo y de la tabla hash.
-     * <p>
-     * Antes de eliminarla se recorre el resto de estaciones para quitar las
-     * conexiones que apuntaban a ella. De esta forma no quedan conexiones
-     * "colgadas" apuntando a una estación que ya no existe.
-     *
-     * @param id ID de la estación que se quiere eliminar.
-     * @return {@code true} si se eliminó; {@code false} si no existía.
+     * Elimina una estacion del grafo y de la tabla hash. Antes de eliminarla 
+     * recorre las demas para quitar conexiones que apuntaban a ella, evitando 
+     * dejar rutas colgadas. Devuelve verdadero si se borro correctamente.
      */
     public boolean eliminarEstacion(String id) {
         Estacion e = indice.buscar(id);
@@ -89,11 +75,15 @@ public class GrafoPonderado {
             return false;
         }
 
-        // Se usa tiempo 0 porque al comparar conexiones solo importan origen y destino.
-        for (Nodo<Estacion> n = estaciones.getCabeza(); n != null; n = n.getSiguiente()) {
-            Estacion otra = (Estacion) n.getDato();
+        // Se usa tiempo 0: al comparar conexiones solo importan origen y destino
+        for (Nodo<Estacion> n = estaciones.getCabeza(); 
+             n != null; 
+             n = n.getSiguiente()) {
+            
+            Estacion otra = n.getDato();
             otra.getConexiones().eliminar(new Conexion(otra, e, 0));
         }
+        
         e.getConexiones().vaciar();
         estaciones.eliminar(e);
         indice.eliminar(id);
@@ -101,18 +91,14 @@ public class GrafoPonderado {
     }
 
     /**
-     * Agrega una conexión entre dos estaciones con un tiempo determinado.
-     * <p>
-     * Si la conexión ya existía, se actualiza su tiempo. Si el grafo no es
-     * dirigido, también se registra la conexión en sentido inverso.
-     *
-     * @param origen  estación de origen.
-     * @param destino estación de destino.
-     * @param tiempo  tiempo de viaje entre las dos estaciones.
-     * @return {@code true} si la conexión se registró; {@code false} si los datos no son válidos.
+     * Agrega una conexion entre dos estaciones con un tiempo determinado.
+     * Si la conexion ya existia, se actualiza su tiempo. Si el grafo no es
+     * dirigido, tambien se registra en sentido inverso. Retorna verdadero 
+     * si se guardo con exito.
      */
-    public boolean agregarConexion(Estacion origen, Estacion destino,
-            double tiempo) {
+    public boolean agregarConexion(
+            Estacion origen, Estacion destino, double tiempo) {
+        
         if (origen == null || destino == null || origen.equals(destino) ||
                 tiempo < 0) {
             return false;
@@ -120,7 +106,7 @@ public class GrafoPonderado {
 
         registrarConexion(origen, destino, tiempo);
 
-        // En un grafo no dirigido la conexión debe poder recorrerse en ambos sentidos.
+        // Si es no dirigido, la conexion se recorre en ambos sentidos.
         if (!dirigido) {
             registrarConexion(destino, origen, tiempo);
         }
@@ -128,32 +114,24 @@ public class GrafoPonderado {
     }
 
     /**
-     * Sobrecarga que agrega una conexión buscando las estaciones por sus ID.
-     *
-     * @param idOrigen  ID de la estación de origen.
-     * @param idDestino ID de la estación de destino.
-     * @param tiempo    tiempo de viaje entre las dos estaciones.
-     * @return {@code true} si la conexión se registró; {@code false} si alguna estación no existe o los datos no son válidos.
+     * Version alternativa para agregar una conexion buscando las estaciones 
+     * directamente por sus textos de ID. Devuelve verdadero si se registro.
      */
-    public boolean agregarConexion(String idOrigen, String idDestino,
-            double tiempo) {
-        return agregarConexion(indice.buscar(idOrigen),
-                indice.buscar(idDestino), tiempo);
+    public boolean agregarConexion(
+            String idOrigen, String idDestino, double tiempo) {
+        return agregarConexion(
+                indice.buscar(idOrigen), indice.buscar(idDestino), tiempo
+        );
     }
 
     /**
-     * Guarda el tiempo entre dos estaciones.
-     * <p>
-     * Si la conexión ya existía, solo se actualiza su tiempo. Se busca con
-     * tiempo 0 porque al comparar conexiones solo importan origen y destino.
-     *
-     * @param a      estación de origen.
-     * @param b      estación de destino.
-     * @param tiempo tiempo de viaje entre las dos estaciones.
+     * Metodo interno que guarda el tiempo entre dos estaciones. Si la 
+     * conexion ya existia, solo se actualiza su duracion.
      */
     private void registrarConexion(Estacion a, Estacion b, double tiempo) {
         Conexion existente = (Conexion)
                 a.getConexiones().buscar(new Conexion(a, b, 0));
+        
         if (existente != null) {
             existente.setTiempo(tiempo);
         } else {
@@ -162,14 +140,9 @@ public class GrafoPonderado {
     }
 
     /**
-     * Elimina la conexión entre dos estaciones.
-     * <p>
-     * Si el grafo no es dirigido, también se elimina la conexión en sentido
-     * inverso para que el grafo quede consistente.
-     *
-     * @param origen  estación de origen.
-     * @param destino estación de destino.
-     * @return {@code true} si se eliminó alguna de las dos conexiones; {@code false} en caso contrario.
+     * Elimina la conexion entre dos estaciones. Si el grafo no es dirigido, 
+     * tambien elimina la conexion inversa para mantener la red consistente.
+     * Retorna verdadero si se logro eliminar algo.
      */
     public boolean eliminarConexion(Estacion origen, Estacion destino) {
         if (origen == null || destino == null) {
@@ -177,6 +150,7 @@ public class GrafoPonderado {
         }
         boolean eliminada = origen.getConexiones().
                 eliminar(new Conexion(origen, destino, 0));
+        
         if (!dirigido) {
             eliminada = destino.getConexiones().
                     eliminar(new Conexion(destino, origen, 0)) || eliminada;
@@ -185,31 +159,25 @@ public class GrafoPonderado {
     }
 
     /**
-     * Devuelve la lista de conexiones que salen de una estación.
-     *
-     * @param e estación de la que se quieren obtener las conexiones.
-     * @return lista de conexiones de la estación, o una lista vacía si la estación es {@code null}.
+     * Devuelve la lista de conexiones que salen de una estacion especifica.
+     * Si la estacion entregada es nula, devuelve una lista vacia.
      */
-    public ListaEnlazada obtenerVecinos(Estacion e) {
-        return e == null ? new ListaEnlazada() : e.getConexiones();
+    public ListaEnlazada<Conexion> obtenerVecinos(Estacion e) {
+        if (e == null) {
+            return new ListaEnlazada<>();
+        }
+        return e.getConexiones();
     }
 
     /**
-     * Busca una estación por su ID usando la tabla hash.
-     *
-     * @param id ID de la estación que se quiere buscar.
-     * @return la estación encontrada, o {@code null} si no existe.
+     * Busca una estacion por su ID usando la tabla hash y la devuelve.
      */
     public Estacion buscarEstacion(String id) {
         return indice.buscar(id);
     }
 
     /**
-     * Devuelve la conexión entre dos estaciones.
-     *
-     * @param origen  estación de origen.
-     * @param destino estación de destino.
-     * @return la conexión encontrada, o {@code null} si no existe.
+     * Devuelve la conexion exacta entre dos estaciones, o nulo si no existe.
      */
     public Conexion buscarConexion(Estacion origen, Estacion destino) {
         if (origen == null || destino == null) {
@@ -220,19 +188,19 @@ public class GrafoPonderado {
     }
 
     /**
-     * Devuelve las líneas distintas que aparecen en la red.
-     * <p>
-     * Se recorre la lista de estaciones y se van guardando las líneas sin
-     * repetir, manteniendo el orden en que aparecen.
-     *
-     * @return lista enlazada con los nombres de las líneas.
+     * Devuelve las lineas distintas que aparecen en la red. Recorre la lista 
+     * de estaciones y guarda los nombres de las lineas sin repetir, 
+     * manteniendo el orden original.
      */
-    public ListaEnlazada obtenerLineas() {
-        ListaEnlazada lineas = new ListaEnlazada();
-        for (Nodo n = estaciones.getCabeza(); n != null; n = n.getSiguiente()) {
-            String linea = ((Estacion) n.getDato()).getLinea();
+    public ListaEnlazada<String> obtenerLineas() {
+        ListaEnlazada<String> lineas = new ListaEnlazada<>();
+        
+        for (Nodo<Estacion> n = estaciones.getCabeza(); 
+             n != null; 
+             n = n.getSiguiente()) {
+            
+            String linea = n.getDato().getLinea();
 
-            // Solo se agrega la línea si todavía no estaba en la lista.
             if (lineas.buscar(linea) == null) {
                 lineas.insertar(linea);
             }
@@ -241,39 +209,41 @@ public class GrafoPonderado {
     }
 
     /**
-     * Devuelve el número de estaciones del grafo.
-     *
-     * @return cantidad de estaciones registradas.
+     * Devuelve el numero total de estaciones registradas en el grafo.
      */
-    public int numEstaciones() { return estaciones.obtenerTamano(); }
+    public int numEstaciones() { 
+        return estaciones.obtenerTamano(); 
+    }
 
     /**
-     * Cuenta las conexiones guardadas.
-     * <p>
-     * En un grafo no dirigido cada viaje aparece dos veces, una por cada
-     * sentido, porque así se guarda internamente.
-     *
-     * @return total de conexiones almacenadas.
+     * Cuenta las conexiones guardadas en total. En un grafo no dirigido cada 
+     * viaje cuenta doble porque se guarda internamente en ambos sentidos.
      */
     public int numConexiones() {
         int total = 0;
-        for (Nodo n = estaciones.getCabeza(); n != null; n = n.getSiguiente()) {
-            total += ((Estacion) n.getDato()).getConexiones().obtenerTamano();
+        for (Nodo<Estacion> n = estaciones.getCabeza(); 
+             n != null; 
+             n = n.getSiguiente()) {
+            
+            total += n.getDato().getConexiones().obtenerTamano();
         }
         return total;
     }
 
     /**
-     * Elimina todas las conexiones pero mantiene las estaciones.
+     * Vacia todas las rutas y conexiones, pero mantiene las estaciones intactas.
      */
     public void limpiarConexiones() {
-        for (Nodo n = estaciones.getCabeza(); n != null; n = n.getSiguiente()) {
-            ((Estacion) n.getDato()).getConexiones().vaciar();
+        for (Nodo<Estacion> n = estaciones.getCabeza(); 
+             n != null; 
+             n = n.getSiguiente()) {
+            
+            n.getDato().getConexiones().vaciar();
         }
     }
 
     /**
-     * Deja vacíos el grafo y la tabla hash.
+     * Borra absolutamente todo: deja vacios el grafo y la tabla hash.
      */
     public void limpiar() {
         limpiarConexiones();
@@ -282,23 +252,23 @@ public class GrafoPonderado {
     }
 
     /**
-     * Devuelve la lista con todas las estaciones del grafo.
-     *
-     * @return lista enlazada de estaciones.
+     * Devuelve la estructura principal que contiene a todas las estaciones.
      */
-    public ListaEnlazada<Estacion> getEstaciones() { return estaciones; }
+    public ListaEnlazada<Estacion> getEstaciones() { 
+        return estaciones; 
+    }
 
     /**
-     * Devuelve la tabla hash que indexa las estaciones por ID.
-     *
-     * @return tabla hash de estaciones.
+     * Devuelve la tabla hash utilizada para encontrar estaciones.
      */
-    public TablaHash getIndice() { return indice; }
+    public TablaHash getIndice() { 
+        return indice; 
+    }
 
     /**
-     * Indica si el grafo es dirigido.
-     *
-     * @return {@code true} si el grafo es dirigido; {@code false} si no lo es.
+     * Indica mediante un valor booleano si este grafo es dirigido.
      */
-    public boolean esDirigido() { return dirigido; }
+    public boolean esDirigido() { 
+        return dirigido; 
+    }
 }
