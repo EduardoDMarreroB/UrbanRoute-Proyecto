@@ -192,7 +192,7 @@ public class TablaHash {
     }
 
     /** 
-     * Busca una estación utilizando su ID.
+     * Busca una estación utilizando su clave (ID).
      * Utiliza la función hash. Calcula la posición exacta de la estación, va a
      * la casilla correspondiente donde se encuentra y revisa si el ID se 
      * encuentra ahí.
