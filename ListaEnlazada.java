@@ -2,12 +2,19 @@ package urbanroute.tda;
 
 /**
 * Lista simplemente enlazada genérica implementada mediante nodos propios.
-*/ 
+*/
 public class ListaEnlazada<T> {
-    private Nodo<T> cabeza; // Referencia al primer nodo de la lista
-    private Nodo<T> ultimo; // Referencia al último nodo de la lista 
-                            // para incorporaciones rápidas
-    private int tamano; // Cantidad de elementos almacenados en la lista
+    /**
+     * Referencia o apuntador al primer nodo de la lista.
+     */
+    private Nodo<T> cabeza;
+    
+    /**
+     * Referencia o apuntador al último nodo de la lista para incorporaciones 
+     * rápidas.
+     */
+    private Nodo<T> ultimo;  
+    private int tamano;
 
     /**
      * Crea una lista simplemente enlazada vacía.
@@ -15,20 +22,20 @@ public class ListaEnlazada<T> {
     public ListaEnlazada() {
         cabeza = null;
         ultimo = null;
-        tamano = 0; // Empezamos el contador en cero
+        tamano = 0; // Inicializamos el contador en cero
     }
 
     /**
      * Inserta un elemento al final de la lista en tiempo O(1).
+     * @param dato El elemento que será guardado al final.
      */
     public void insertar(T dato) {
         Nodo<T> nuevoNodo = new Nodo<>(dato);
-
-        if (cabeza == null) {  // Si la lista esta vacia
+        if (cabeza == null) {  // Verifica si la lista está vacía
             cabeza = nuevoNodo;
             ultimo = nuevoNodo;
         } else { // Si ya hay elementos en la lista
-            ultimo.setSiguiente(nuevoNodo); // Enlazamos el ultimo nodo 
+            ultimo.setSiguiente(nuevoNodo); // Enlazamos el último nodo 
                                             // actual con el nuevo
             ultimo = nuevoNodo; // Actualizamos el puntero del ultimo nodo
         }
@@ -36,7 +43,8 @@ public class ListaEnlazada<T> {
     }
     
     /**
-     * Inserta un elemento al inicio de la lista.
+     * Inserta un nuevo elemento al inicio de la lista.
+     * @param dato El elemento que será guardado al inicio.
      */
     public void insertarInicio(T dato) { // El nuevo nodo apunta a la 
                                          // antigua cabeza
@@ -52,6 +60,8 @@ public class ListaEnlazada<T> {
 
     /**
      * Busca la primera aparición de un elemento en la lista.
+     * @param dato El elemento a encontrar de la lista.
+     * @return El dato si lo encuentra, sino retorna null.
      */
     public T buscar(T dato) {
         // Recorremos los nodos desde la cabeza
@@ -67,11 +77,13 @@ public class ListaEnlazada<T> {
 
     /**
      * Elimina la primera aparición de un elemento de la lista.
+     * @param dato El elemento a elminar de la lista.
+     * @return true si el borrado fue exitoso, o false si el dato no pudo ser
+     * encontrado.
      */
     public boolean eliminar(T dato) {
         Nodo<T> nodoAnterior = null;
         Nodo<T> nodoActual = cabeza;
-
         while (nodoActual != null) {
             if (sonIguales(nodoActual.getDato(), dato)) { // Nodo Encontrado
                 desvincularNodo(nodoAnterior, nodoActual); // Reenlazamos nodos
@@ -86,6 +98,9 @@ public class ListaEnlazada<T> {
 
     /**
      * Elimina el elemento ubicado en la posición indicada.
+     * @param posicionLista Índice numérico (empezando en 0) del nodo a borrar.
+     * @throws IndexOutOfBoundsException Si le pasamos una posición negativa o 
+     * mayor al tamaño de la lista.
      */
     public void eliminarEn(int posicionLista) {
         validarPosicion(posicionLista); // Verificamos que el índice exista
@@ -103,6 +118,9 @@ public class ListaEnlazada<T> {
 
     /**
      * Obtiene el elemento almacenado en la posición indicada.
+     * @param posicionLista La posición numérica a consultar en la lista.
+     * @return El elemento guardado en esa posición.
+     * @throws IndexOutOfBoundsException Si la posición solicitada no existe.
      */
     public T obtener(int posicionLista) {
         validarPosicion(posicionLista);
@@ -116,6 +134,7 @@ public class ListaEnlazada<T> {
 
     /**
      * Obtiene la cantidad de elementos almacenados en la lista.
+     * @return La cantidad total de nodos en la lista.
      */
     public int obtenerTamano() {
         return tamano;
@@ -123,6 +142,7 @@ public class ListaEnlazada<T> {
 
     /**
      * Comprueba si la lista está vacía.
+     * @return true si no hay ningún elemento, o false si tiene al menos uno.
      */
     public boolean esVacia() {
         return tamano == 0;
@@ -139,13 +159,17 @@ public class ListaEnlazada<T> {
 
     /**
      * Obtiene la referencia al primer nodo de la lista.
+     * @return El nodo que actúa como cabeza de la lista.
      */
     public Nodo<T> getCabeza() {
         return cabeza;
     }
 
     /**
-     * Comprueba que una posición se encuentre dentro de los límites.
+     * Comprueba que una posición se encuentre dentro de los límites (números 
+     * enteros positivos y dentro del rango de elementos de la lista).
+     * @param posicionLista El índice que queremos poner a prueba.
+     * @throws IndexOutOfBoundsException Si el índice está fuera de los límites.
      */
     private void validarPosicion(int posicionLista) {
         if (posicionLista < 0 || posicionLista >= tamano) { // Validamos límites
@@ -157,6 +181,8 @@ public class ListaEnlazada<T> {
 
     /**
      * Desvincula un nodo de la lista y actualiza sus referencias.
+     * @param nodoAnterior El nodo que está justo detrás del que vamos a borrar.
+     * @param nodoActual El nodo a ser eliminado.
      */
     private void desvincularNodo(Nodo<T> nodoAnterior, Nodo<T> nodoActual) {
         if (nodoAnterior == null) { // Si estamos eliminando la cabeza
@@ -169,7 +195,6 @@ public class ListaEnlazada<T> {
             ultimo = nodoAnterior;  // El anterior pasa a ser el ultimo
         }
         tamano--; // Reducimos la cantidad de elementos
-
         if (tamano == 0) { // Si la lista quedo completamente vacía
             cabeza = null;
             ultimo = null;
@@ -177,10 +202,18 @@ public class ListaEnlazada<T> {
     }
 
     /**
-     * Compara dos elementos, contemplando también las referencias null.
+     * Compara dos elementos de forma segura para evitar errores de tipo 
+     * NullPointerException.
+     * Verifica primero si ambas referencias apuntan al mismo espacio de memoria 
+     * (o si ambas son nulas) usando "==". Si no es así, se asegura de que el 
+     * primer bobjeto no sea nulo antes de invocar el método equals() para 
+     * comparar sus valores.
+     * @param datoA El primer elemento a comparar.
+     * @param datoB El segundo elemento a comparar.
+     * @return true si los elementos coinciden en valor o si ambos son null; 
+     * o false en caso contrario.
      */
     private boolean sonIguales(T datoA, T datoB) {
-        // es el mismo objeto o ambos equals coinciden
         return datoA == datoB || (datoA != null && datoA.equals(datoB));
     }
 }
