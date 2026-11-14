@@ -32,7 +32,7 @@ import urbanroute.tda.Nodo;
 
 /**
  * Ventana principal de UrbanRoute.
- * <p>
+ *
  * Se encarga de crear el modelo ({@link TablaHash} y {@link GrafoPonderado}),
  * los controladores ({@link GestorArchivo} y {@link AnalizadorRed}) y el
  * visualizador del grafo. También construye la interfaz Swing y centraliza
@@ -58,15 +58,17 @@ public class VentanaPrincipal extends JFrame {
     /** Área de texto donde se van mostrando los mensajes de la aplicación. */
     private JTextArea areaLog;
 
-    /** Última carpeta usada en los diálogos de archivos, para no empezar siempre desde cero. */
+    /** Última carpeta usada en los diálogos de archivos, para no empezar 
+     * siempre desde cero. */
     private File ultimaCarpeta;
 
     /** Panel que divide la zona del grafo y el registro de mensajes. */
     private JSplitPane panelDividido;
+    private String zona;
 
     /**
      * Crea la ventana principal y todos los objetos que necesita la aplicación.
-     * <p>
+     *
      * Primero se crean el modelo y los controladores. Después se conectan el
      * analizador y el visualizador para que puedan comunicarse entre sí.
      */
@@ -78,15 +80,15 @@ public class VentanaPrincipal extends JFrame {
         analizador = new AnalizadorRed(grafo);
         visualizador = new VisualizadorGrafo(grafo, this);
         analizador.setVisualizador(visualizador);
-        visualizador.setAnalizador(analizador);
         construirUI();
     }
 
     /**
      * Construye y organiza los componentes de la interfaz gráfica.
-     * <p>
+     *
      * La barra superior agrupa las acciones por tipo: archivos, red y análisis.
-     * En el centro se coloca el panel dividido que muestra el grafo y el registro.
+     * En el centro se coloca el panel dividido que muestra el grafo y el 
+     * registro.
      */
     private void construirUI() {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -123,7 +125,8 @@ public class VentanaPrincipal extends JFrame {
 
         panelDividido = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         panelDividido.setTopComponent(new JLabel(
-                "Cargue diccionario.csv y grafo.csv para ver la red", SwingConstants.CENTER));
+                "Cargue diccionario.csv y grafo.csv para ver la red", 
+                SwingConstants.CENTER));
         panelDividido.setBottomComponent(new JScrollPane(areaLog));
         panelDividido.setDividerLocation(430);
         panelDividido.setResizeWeight(0.8);
@@ -145,7 +148,7 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Crea un panel con título y una cuadrícula de botones.
-     * <p>
+     * 
      * Si se pasan menos de cuatro botones, se rellenan los huecos con etiquetas
      * vacías para que la cuadrícula no cambie de tamaño.
      *
@@ -167,7 +170,7 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Carga el diccionario de estaciones desde un archivo CSV.
-     * <p>
+     *
      * Si ya hay estaciones en memoria, se pide confirmación porque cargar otro
      * diccionario borra las estaciones y conexiones actuales.
      */
@@ -175,16 +178,19 @@ public class VentanaPrincipal extends JFrame {
         File f = elegirArchivo("Seleccionar diccionario.csv");
         if (f == null) return;
 
-        // Cargar otro diccionario reinicia el grafo, así que se avisa antes de borrar nada.
+        // Cargar otro diccionario reinicia el grafo, así que se avisa antes 
+        // de borrar nada.
         if (tabla.obtenerTamano() > 0 && !confirmarAdvertencia(
                 "Ya hay " + tabla.obtenerTamano() + " estaciones en memoria.\n"
-              + "Cargar otro diccionario BORRARÁ las estaciones y conexiones actuales. ¿Continuar?")) {
+              + "Cargar otro diccionario BORRARÁ las estaciones y conexiones "
+                        + "actuales. ¿Continuar?")) {
             return;
         }
         try {
             grafo.limpiar();
             int n = gestor.cargarEstaciones(f.getAbsolutePath(), tabla, grafo);
-            mostrarMensaje("Diccionario cargado: " + n + " estaciones (" + gestor.getLineasInvalidas() + " líneas omitidas).");
+            mostrarMensaje("Diccionario cargado: " + n + " estaciones "
+                    + "(" + gestor.getLineasInvalidas() + " líneas omitidas).");
             visualizador.sincronizar();
         } catch (IOException ex) {
             mostrarError("No se pudo leer el diccionario: " + ex.getMessage());
@@ -193,7 +199,7 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Carga las conexiones del grafo desde un archivo CSV.
-     * <p>
+     * 
      * Antes de cargar conexiones se comprueba que existan estaciones, porque
      * una conexión siempre debe unir dos estaciones ya registradas.
      */
@@ -207,13 +213,15 @@ public class VentanaPrincipal extends JFrame {
 
         // Si ya hay conexiones, se reemplazan por las del archivo.
         if (grafo.numConexiones() > 0 && !confirmarAdvertencia(
-                "Ya hay conexiones en memoria. Se reemplazarán por las del archivo. ¿Continuar?")) {
+                "Ya hay conexiones en memoria. Se reemplazarán por las del"
+                        + "archivo. ¿Continuar?")) {
             return;
         }
         try {
             grafo.limpiarConexiones();
             int n = gestor.cargarConexiones(f.getAbsolutePath(), grafo);
-            mostrarMensaje("Grafo cargado: " + n + " conexiones (" + gestor.getLineasInvalidas() + " líneas omitidas).");
+            mostrarMensaje("Grafo cargado: " + n + " conexiones "
+                    + "(" + gestor.getLineasInvalidas() + " líneas omitidas).");
             accionMostrarGrafo();
         } catch (IOException ex) {
             mostrarError("No se pudo leer el grafo: " + ex.getMessage());
@@ -221,22 +229,26 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Guarda el estado actual de la red en dos archivos CSV dentro de una carpeta.
-     * <p>
+     * Guarda el estado actual de la red en dos archivos CSV dentro de una 
+     * carpeta.
+     *
      * El usuario elige la carpeta destino y se avisa si ya existen
      * {@code diccionario.csv} o {@code grafo.csv}, porque serán sobrescritos.
      */
     private void accionGuardar() {
         JFileChooser fc = new JFileChooser(ultimaCarpeta);
-        fc.setDialogTitle("Carpeta destino (se escribirán diccionario.csv y grafo.csv)");
+        fc.setDialogTitle("Carpeta destino (se escribirán diccionario.csv "
+                + "y grafo.csv)");
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         if (fc.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) return;
 
         File carpeta = fc.getSelectedFile();
         ultimaCarpeta = carpeta;
 
-        if ((new File(carpeta, "diccionario.csv").exists() || new File(carpeta, "grafo.csv").exists())
-                && !confirmarAdvertencia("Los archivos CSV existentes en esa carpeta serán SOBRESCRITOS. ¿Continuar?")) {
+        if ((new File(carpeta, "diccionario.csv").exists() || 
+                new File(carpeta, "grafo.csv").exists())
+                && !confirmarAdvertencia("Los archivos CSV existentes en esa "
+                        + "carpeta serán SOBRESCRITOS. ¿Continuar?")) {
             return;
         }
         try {
@@ -249,7 +261,7 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Muestra el grafo en el panel superior de la ventana.
-     * <p>
+     * 
      * Se conserva la posición del divisor para que el cambio de panel no mueva
      * la vista que el usuario ya tenía.
      */
@@ -278,7 +290,8 @@ public class VentanaPrincipal extends JFrame {
         JTextField campoCapacidad = new JTextField("0", 12);
         JTextField campoTiempo = new JTextField(12);
 
-        JComboBox<String> comboLinea = new JComboBox<String>(lineasExistentes());
+        JComboBox<String> comboLinea = 
+                new JComboBox<String>(lineasExistentes());
         comboLinea.setEditable(true);
 
         Estacion[] existentes = todasLasEstaciones();
@@ -290,16 +303,24 @@ public class VentanaPrincipal extends JFrame {
         JComboBox<Object> comboVecino = new JComboBox<Object>(opcionesVecino);
 
         JPanel panel = new JPanel(new GridLayout(0, 2, 6, 6));
-        panel.add(new JLabel("ID:"));                         panel.add(campoId);
-        panel.add(new JLabel("Nombre:"));                     panel.add(campoNombre);
-        panel.add(new JLabel("Línea (elegir o escribir):"));  panel.add(comboLinea);
-        panel.add(new JLabel("Capacidad:"));                  panel.add(campoCapacidad);
-        panel.add(new JLabel("Conectar con:"));               panel.add(comboVecino);
-        panel.add(new JLabel("Tiempo de viaje (min):"));      panel.add(campoTiempo);
+        panel.add(new JLabel("ID:"));                         
+        panel.add(campoId);
+        panel.add(new JLabel("Nombre:"));                     
+        panel.add(campoNombre);
+        panel.add(new JLabel("Línea (elegir o escribir):"));  
+        panel.add(comboLinea);
+        panel.add(new JLabel("Capacidad:"));                  
+        panel.add(campoCapacidad);
+        panel.add(new JLabel("Conectar con:"));               
+        panel.add(comboVecino);
+        panel.add(new JLabel("Tiempo de viaje (min):"));      
+        panel.add(campoTiempo);
 
-        // Se valida dentro del bucle para no cerrar el formulario si hay un error.
+        // Se valida dentro del bucle para no cerrar el formulario si hay 
+        // un error.
         while (true) {
-            int r = JOptionPane.showConfirmDialog(this, panel, "Agregar estación",
+            int r = JOptionPane.showConfirmDialog(this, panel, 
+                    "Agregar estación",
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
             if (r != JOptionPane.OK_OPTION) return;
 
@@ -313,96 +334,114 @@ public class VentanaPrincipal extends JFrame {
             double tiempo = 0;
             Estacion vecino = null;
 
-            if (!textoValido(id) || !textoValido(nombre) || !textoValido(linea)) {
-                error = "ID, nombre y línea son obligatorios y no pueden contener comas.";
-            } else if (id.startsWith("#") || id.equalsIgnoreCase("id") || id.equalsIgnoreCase("origen")) {
+            if (!textoValido(id) || !textoValido(nombre) || !textoValido(linea))
+            {
+                error = "ID, nombre y línea son obligatorios y no pueden "
+                        + "contener comas.";
+            } else if (id.startsWith("#") || id.equalsIgnoreCase("id") || 
+                    id.equalsIgnoreCase("origen")) {
                 // Estos valores están reservados por el formato del CSV.
                 error = "Ese ID está reservado por el formato CSV. Use otro.";
             } else if (grafo.buscarEstacion(id) != null) {
                 error = "Ya existe una estación con el ID " + id + ".";
             } else {
                 try {
-                    capacidad = Integer.parseInt(campoCapacidad.getText().trim());
-                    if (capacidad < 0) error = "La capacidad no puede ser negativa.";
+                    capacidad = Integer.parseInt(campoCapacidad.getText().
+                            trim());
+                    if (capacidad < 0) error = "La capacidad no puede ser "
+                            + "negativa.";
                 } catch (NumberFormatException ex) {
                     error = "La capacidad debe ser un número entero.";
                 }
             }
 
             // Solo se lee el tiempo si el usuario eligió una estación vecina.
-            if (error == null && comboVecino.getSelectedItem() instanceof Estacion) {
+            if (error == null && comboVecino.getSelectedItem() 
+                    instanceof Estacion) {
                 vecino = (Estacion) comboVecino.getSelectedItem();
                 tiempo = leerTiempo(campoTiempo.getText());
-                if (tiempo < 0) error = "Indique un tiempo de viaje mayor que 0 (por ejemplo 3.5).";
+                if (tiempo < 0) error = "Indique un tiempo de viaje mayor que 0"
+                        + " (por ejemplo 3.5).";
             }
             if (error != null) {
                 mostrarError(error);
                 continue;
             }
 
-            Estacion nueva = new Estacion(id, nombre, linea, capacidad);
+            Estacion nueva = new Estacion(id, nombre, linea, zona, capacidad);
             grafo.agregarEstacion(nueva);
             if (vecino != null) {
                 grafo.agregarConexion(nueva, vecino, tiempo);
             }
             visualizador.sincronizar();
-            mostrarMensaje("Estación agregada: " + nueva + " (línea " + linea + ")"
-                    + (vecino != null ? ", conectada con " + vecino.getNombre() + " (" + tiempo + " min)."
-                                      : ", sin conexiones todavía."));
+            mostrarMensaje("Estación agregada: " + nueva + " (línea " + linea 
+                    + ")" + (vecino != null ? ", conectada con " 
+                            + vecino.getNombre() + " (" + tiempo + " min)."
+                            : ", sin conexiones todavía."));
             return;
         }
     }
 
     /**
      * Elimina una estación del grafo después de pedir confirmación.
-     * <p>
+     * 
      * Antes de eliminarla se guarda su grado para poder informar cuántas
      * conexiones se van a perder junto con la estación.
      */
     private void accionEliminarEstacion() {
-        Estacion e = elegirEstacion("Eliminar estación", "Seleccione la estación a eliminar:", todasLasEstaciones());
+        Estacion e = elegirEstacion("Eliminar estación", "Seleccione la "
+                + "estación a eliminar:", todasLasEstaciones());
         if (e == null) return;
 
         int conexiones = e.getGrado();
-        if (!confirmarAdvertencia("Se eliminará " + e + " y sus " + conexiones + " conexiones. ¿Continuar?")) {
+        if (!confirmarAdvertencia("Se eliminará " + e + " y sus " + conexiones 
+                + " conexiones. ¿Continuar?")) {
             return;
         }
         grafo.eliminarEstacion(e.getId());
         visualizador.sincronizar();
-        mostrarMensaje("Estación eliminada: " + e + " (se eliminaron " + conexiones + " conexiones).");
+        mostrarMensaje("Estación eliminada: " + e + " (se eliminaron " 
+                + conexiones + " conexiones).");
     }
 
     /**
      * Agrega o actualiza una conexión entre dos estaciones.
-     * <p>
+     * 
      * Se eligen origen y destino, y luego se pide el tiempo de viaje. Si la
      * conexión ya existía, el grafo la actualiza y solo cambia el mensaje.
      */
     private void accionAgregarConexion() {
-        Estacion origen = elegirEstacion("Agregar conexión", "Estación de origen:", todasLasEstaciones());
+        Estacion origen = elegirEstacion("Agregar conexión", 
+                "Estación de origen:", todasLasEstaciones());
         if (origen == null) return;
 
-        Estacion destino = elegirEstacion("Agregar conexión", "Estación de destino:", todasExcepto(origen));
+        Estacion destino = elegirEstacion("Agregar conexión", 
+                "Estación de destino:", todasExcepto(origen));
         if (destino == null) return;
 
-        Double tiempo = pedirTiempo("Tiempo de viaje entre " + origen.getNombre() + " y " + destino.getNombre() + " (minutos):");
+        Double tiempo = pedirTiempo("Tiempo de viaje entre " 
+                + origen.getNombre() + " y " + destino.getNombre() 
+                + " (minutos):");
         if (tiempo == null) return;
 
         boolean yaExistia = grafo.buscarConexion(origen, destino) != null;
         grafo.agregarConexion(origen, destino, tiempo);
         visualizador.sincronizar();
-        mostrarMensaje((yaExistia ? "Conexión actualizada: " : "Conexión agregada: ")
-                + origen.getNombre() + " <-> " + destino.getNombre() + " (" + tiempo + " min).");
+        mostrarMensaje((yaExistia ? "Conexión actualizada: " : 
+                "Conexión agregada: ")
+                + origen.getNombre() + " <-> " + destino.getNombre() 
+                + " (" + tiempo + " min).");
     }
 
     /**
      * Elimina la conexión entre dos estaciones.
-     * <p>
+     * 
      * Primero se elige la estación de origen y después solo se ofrecen sus
      * vecinos directos, porque no tiene sentido borrar una conexión que no existe.
      */
     private void accionEliminarConexion() {
-        Estacion origen = elegirEstacion("Eliminar conexión", "Estación de origen:", todasLasEstaciones());
+        Estacion origen = elegirEstacion("Eliminar conexión", 
+                "Estación de origen:", todasLasEstaciones());
         if (origen == null) return;
 
         Estacion[] vecinos = vecinosDe(origen);
@@ -411,34 +450,43 @@ public class VentanaPrincipal extends JFrame {
             return;
         }
 
-        Estacion destino = elegirEstacion("Eliminar conexión", "Conexión con:", vecinos);
+        Estacion destino = elegirEstacion("Eliminar conexión", 
+                "Conexión con:", vecinos);
         if (destino == null) return;
 
         grafo.eliminarConexion(origen, destino);
         visualizador.sincronizar();
-        mostrarMensaje("Conexión eliminada: " + origen.getNombre() + " <-> " + destino.getNombre() + ".");
+        mostrarMensaje("Conexión eliminada: " + origen.getNombre() 
+                + " <-> " + destino.getNombre() + ".");
     }
 
     /**
      * Calcula y muestra la ruta mínima entre dos estaciones.
-     * <p>
+     * 
      * Usa el algoritmo de Dijkstra del analizador. Si no hay camino, se avisa
-     * al usuario. Si hay ruta, se muestra en el registro y se resalta en el grafo.
+     * al usuario. Si hay ruta, se muestra en el registro y se resalta en el 
+     * grafo.
      */
     private void accionRutaMinima() {
-        Estacion origen = elegirEstacion("Ruta mínima", "Estación de origen:", todasLasEstaciones());
+        Estacion origen = elegirEstacion("Ruta mínima", "Estación de origen:",
+                todasLasEstaciones());
         if (origen == null) return;
 
-        Estacion destino = elegirEstacion("Ruta mínima", "Estación de destino:", todasLasEstaciones());
+        Estacion destino = elegirEstacion("Ruta mínima", "Estación de destino:",
+                todasLasEstaciones());
         if (destino == null) return;
 
-        ListaEnlazada ruta = analizador.dijkstra(origen.getId(), destino.getId());
+        ListaEnlazada ruta = analizador.dijkstra(origen.getId(), 
+                destino.getId());
         if (ruta == null) {
-            mostrarMensaje("No existe camino entre " + origen.getNombre() + " y " + destino.getNombre() + ".");
+            mostrarMensaje("No existe camino entre " + origen.getNombre() 
+                    + " y " + destino.getNombre() + ".");
             return;
         }
-        mostrarMensaje("Ruta mínima (" + analizador.getUltimoTiempoRuta() + " min, "
-                + ruta.obtenerTamano() + " estaciones): " + listaATexto(ruta, " -> "));
+        mostrarMensaje("Ruta mínima (" + analizador.getUltimoTiempoRuta() 
+                + " min, "
+                + ruta.obtenerTamano() + " estaciones): " 
+                + listaATexto(ruta, " -> "));
 
         // Si el grafo no se está viendo, se muestra antes de resaltar la ruta.
         if (!visualizador.estaMostrandose()) {
@@ -449,7 +497,7 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Analiza las subredes aisladas de la red.
-     * <p>
+     * 
      * Permite analizar la red actual, simular la baja de una estación o simular
      * la baja de una línea completa.
      */
@@ -459,28 +507,34 @@ public class VentanaPrincipal extends JFrame {
             return;
         }
         String[] opciones = {"Red actual", "Sin una estación", "Sin una línea"};
-        int op = JOptionPane.showOptionDialog(this, "¿Qué desea analizar?", "Subredes aisladas",
-                JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opciones, opciones[0]);
+        int op = JOptionPane.showOptionDialog(this, "¿Qué desea analizar?", 
+                "Subredes aisladas",
+                JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, 
+                null, opciones, opciones[0]);
         if (op < 0) return;
 
         if (op == 0) {
             mostrarSubredes("red actual", analizador.detectarSubredesBFS());
         } else if (op == 1) {
-            Estacion e = elegirEstacion("Simular baja de estación", "Estación que se desconecta:", todasLasEstaciones());
+            Estacion e = elegirEstacion("Simular baja de estación", 
+                    "Estación que se desconecta:", todasLasEstaciones());
             if (e == null) return;
-            mostrarSubredes("sin la estación " + e.getNombre(), analizador.detectarSubredesSinEstacion(e.getId()));
+            mostrarSubredes("sin la estación " + e.getNombre(), 
+                    analizador.detectarSubredesSinEstacion(e.getId()));
         } else {
             String[] lineas = lineasExistentes();
-            Object sel = JOptionPane.showInputDialog(this, "Línea que se desconecta:", "Simular baja de línea",
+            Object sel = JOptionPane.showInputDialog(this, 
+                    "Línea que se desconecta:", "Simular baja de línea",
                     JOptionPane.QUESTION_MESSAGE, null, lineas, lineas[0]);
             if (sel == null) return;
-            mostrarSubredes("sin la línea " + sel, analizador.detectarSubredesSinLinea((String) sel));
+            mostrarSubredes("sin la línea " + sel, 
+                    analizador.detectarSubredesSinLinea((String) sel));
         }
     }
 
     /**
      * Muestra en el registro las subredes encontradas.
-     * <p>
+     *
      * Cada subred es una {@link ListaEnlazada} dentro de otra lista. Si una
      * subred tiene una sola estación, se marca como aislada.
      *
@@ -488,17 +542,20 @@ public class VentanaPrincipal extends JFrame {
      * @param subredes    lista que contiene las subredes encontradas.
      */
     private void mostrarSubredes(String descripcion, ListaEnlazada subredes) {
-        mostrarMensaje("Subredes (" + descripcion + "): " + subredes.obtenerTamano());
+        mostrarMensaje("Subredes (" + descripcion + "): " 
+                + subredes.obtenerTamano());
         for (int i = 0; i < subredes.obtenerTamano(); i++) {
             ListaEnlazada subred = (ListaEnlazada) subredes.obtener(i);
-            mostrarMensaje("  #" + (i + 1) + (subred.obtenerTamano() == 1 ? " [AISLADA]" : "")
-                    + " (" + subred.obtenerTamano() + " estaciones): " + listaATexto(subred, ", "));
+            mostrarMensaje("  #" + (i + 1) + (subred.obtenerTamano() 
+                    == 1 ? " [AISLADA]" : "")
+                    + " (" + subred.obtenerTamano() + " estaciones): " 
+                    + listaATexto(subred, ", "));
         }
     }
 
     /**
      * Calcula y muestra los hubs de la red.
-     * <p>
+     * 
      * Un hub es una estación con muchas conexiones directas. El usuario indica
      * cuántos quiere ver y se muestran ordenados por centralidad de grado.
      */
@@ -507,7 +564,8 @@ public class VentanaPrincipal extends JFrame {
             mostrarError("No hay datos cargados.");
             return;
         }
-        String texto = JOptionPane.showInputDialog(this, "¿Cuántos hubs mostrar?", "5");
+        String texto = JOptionPane.showInputDialog(this, 
+                "¿Cuántos hubs mostrar?", "5");
         if (texto == null) return;
 
         int k;
@@ -523,11 +581,13 @@ public class VentanaPrincipal extends JFrame {
         }
 
         ListaEnlazada hubs = analizador.calcularCentralidadGrado(k);
-        mostrarMensaje("Hubs (top " + hubs.obtenerTamano() + " por conexiones directas):");
+        mostrarMensaje("Hubs (top " + hubs.obtenerTamano() 
+                + " por conexiones directas):");
         int puesto = 1;
         for (Nodo n = hubs.getCabeza(); n != null; n = n.getSiguiente()) {
             Estacion e = (Estacion) n.getDato();
-            mostrarMensaje("  " + puesto++ + ". " + e + " - línea " + e.getLinea()
+            mostrarMensaje("  " + puesto++ + ". " + e + " - línea " 
+                    + e.getLinea()
                     + " - " + e.getGrado() + " conexiones");
         }
     }
@@ -553,7 +613,8 @@ public class VentanaPrincipal extends JFrame {
      * Muestra un cuadro de advertencia con opciones Sí/No.
      *
      * @param mensaje texto que se mostrará al usuario.
-     * @return {@code true} si el usuario confirma; {@code false} en caso contrario.
+     * @return {@code true} si el usuario confirma; {@code false} en caso 
+     * contrario.
      */
     private boolean confirmarAdvertencia(String mensaje) {
         int r = JOptionPane.showConfirmDialog(this, mensaje, "Advertencia",
@@ -567,9 +628,11 @@ public class VentanaPrincipal extends JFrame {
      * @param titulo   título del diálogo.
      * @param mensaje  mensaje que se muestra antes de la lista.
      * @param opciones estaciones entre las que se puede elegir.
-     * @return la estación elegida, o {@code null} si no hay opciones o se cancela.
+     * @return la estación elegida, o {@code null} si no hay opciones o se 
+     * cancela.
      */
-    private Estacion elegirEstacion(String titulo, String mensaje, Estacion[] opciones) {
+    private Estacion elegirEstacion(String titulo, String mensaje, 
+            Estacion[] opciones) {
         if (opciones.length == 0) {
             mostrarError("No hay estaciones disponibles.");
             return null;
@@ -581,7 +644,7 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Convierte la lista de estaciones del grafo en un arreglo.
-     * <p>
+     * 
      * Se usa para poder pasar las estaciones a los diálogos de Swing, que
      * trabajan mejor con arreglos.
      *
@@ -590,7 +653,8 @@ public class VentanaPrincipal extends JFrame {
     private Estacion[] todasLasEstaciones() {
         Estacion[] arreglo = new Estacion[grafo.numEstaciones()];
         int i = 0;
-        for (Nodo n = grafo.getEstaciones().getCabeza(); n != null; n = n.getSiguiente()) {
+        for (Nodo n = grafo.getEstaciones().getCabeza(); n != null; 
+                n = n.getSiguiente()) {
             arreglo[i++] = (Estacion) n.getDato();
         }
         return arreglo;
@@ -654,15 +718,17 @@ public class VentanaPrincipal extends JFrame {
      * se permiten dentro de los campos.
      *
      * @param texto texto que se quiere validar.
-     * @return {@code true} si el texto no está vacío y no contiene comas ni saltos de línea.
+     * @return {@code true} si el texto no está vacío y no contiene comas ni 
+     * saltos de línea.
      */
     private boolean textoValido(String texto) {
-        return texto.length() > 0 && texto.indexOf(',') < 0 && texto.indexOf('\n') < 0;
+        return texto.length() > 0 && texto.indexOf(',') < 0 && 
+                texto.indexOf('\n') < 0;
     }
 
     /**
      * Convierte un texto en un tiempo de viaje.
-     * <p>
+     *
      * Acepta coma como separador decimal. Si el valor no es válido o no es
      * mayor que cero, devuelve {@code -1}.
      *
@@ -686,7 +752,8 @@ public class VentanaPrincipal extends JFrame {
      */
     private Double pedirTiempo(String mensaje) {
         while (true) {
-            String texto = JOptionPane.showInputDialog(this, mensaje, "Tiempo de viaje", JOptionPane.QUESTION_MESSAGE);
+            String texto = JOptionPane.showInputDialog(this, mensaje, 
+                    "Tiempo de viaje", JOptionPane.QUESTION_MESSAGE);
             if (texto == null) return null;
 
             double t = leerTiempo(texto);
@@ -709,7 +776,8 @@ public class VentanaPrincipal extends JFrame {
         StringBuilder sb = new StringBuilder();
         for (Nodo n = lista.getCabeza(); n != null; n = n.getSiguiente()) {
             Object d = n.getDato();
-            sb.append(d instanceof Estacion ? ((Estacion) d).getNombre() : String.valueOf(d));
+            sb.append(d instanceof Estacion ? ((Estacion) d).getNombre() : 
+                    String.valueOf(d));
             if (n.getSiguiente() != null) sb.append(separador);
         }
         return sb.toString();
@@ -731,7 +799,8 @@ public class VentanaPrincipal extends JFrame {
      * @param texto mensaje de error que se quiere mostrar.
      */
     public void mostrarError(String texto) {
-        JOptionPane.showMessageDialog(this, texto, "Error", JOptionPane.ERROR_MESSAGE);
+        JOptionPane.showMessageDialog(this, texto, "Error", 
+                JOptionPane.ERROR_MESSAGE);
     }
 
     /**
