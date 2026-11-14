@@ -97,9 +97,10 @@ public class VentanaPrincipal extends JFrame {
         setLayout(new BorderLayout(8, 8));
 
         JPanel grupoArchivos = grupo("Archivos",
-                boton("Cargar diccionario", () -> accionCargarEstaciones()),
-                boton("Cargar grafo", () -> accionCargarConexiones()),
-                boton("Guardar cambios", () -> accionGuardar()));
+        boton("Cargar diccionario", () -> accionCargarEstaciones()),
+        boton("Cargar grafo", () -> accionCargarConexiones()),
+        boton("Guardar cambios", () -> accionGuardar()),
+        boton("Ver estación en detalle", () -> accionVerDetalleEstacion()));
 
         JPanel grupoRed = grupo("Red",
                 boton("Agregar estación", () -> accionAgregarEstacion()),
@@ -277,6 +278,37 @@ public class VentanaPrincipal extends JFrame {
         panelDividido.revalidate();
         panelDividido.repaint();
     }
+    
+    /**
+    * Permite seleccionar una estación y consultar todas sus propiedades.
+     */
+    private void accionVerDetalleEstacion() {
+        if (grafo.numEstaciones() == 0) {
+            mostrarError("No hay estaciones cargadas para consultar.");
+            return;
+        }
+        Estacion estacion = elegirEstacion(
+            "Ver estación en detalle",
+            "Seleccione la estación que desea consultar:",
+            todasLasEstaciones()
+        );
+         if (estacion == null) return;
+         String detalles =
+            "INFORMACIÓN DE LA ESTACIÓN"
+            + "\n\nID: " + estacion.getId()
+            + "\nNombre: " + estacion.getNombre()
+            + "\nLínea: " + estacion.getLinea()
+            + "\nZona: " + estacion.getZona()
+            + "\nCapacidad: " + estacion.getCapacidad()
+            + " personas"
+            + "\nConexiones directas: " + estacion.getGrado();
+        JOptionPane.showMessageDialog(
+            this,
+            detalles,
+            "Detalle de la estación",
+            JOptionPane.INFORMATION_MESSAGE
+    );
+}
 
     /**
      * Pide los datos de una nueva estación y la agrega al grafo.
