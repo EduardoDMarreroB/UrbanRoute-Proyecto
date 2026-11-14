@@ -280,107 +280,222 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Pide los datos de una nueva estación y la agrega al grafo.
-     * <p>
+     * 
      * El formulario se repite mientras haya errores de validación, de modo que
      * el usuario pueda corregir los datos sin perder lo que ya escribió.
      */
     private void accionAgregarEstacion() {
-        JTextField campoId = new JTextField(12);
-        JTextField campoNombre = new JTextField(12);
-        JTextField campoCapacidad = new JTextField("0", 12);
-        JTextField campoTiempo = new JTextField(12);
 
-        JComboBox<String> comboLinea = 
-                new JComboBox<String>(lineasExistentes());
-        comboLinea.setEditable(true);
-
-        Estacion[] existentes = todasLasEstaciones();
-        Object[] opcionesVecino = new Object[existentes.length + 1];
-        opcionesVecino[0] = "(sin conexión)";
-        for (int i = 0; i < existentes.length; i++) {
-            opcionesVecino[i + 1] = existentes[i];
+    JTextField campoId = new JTextField(12);
+    JTextField campoNombre = new JTextField(12);
+    JTextField campoZona = new JTextField(12);
+    JTextField campoCapacidad = new JTextField("100", 12);
+    JTextField campoTiempo = new JTextField(12);
+    JComboBox<String> comboLinea = new JComboBox<String>(lineasExistentes());
+    comboLinea.setEditable(true);
+    comboLinea.setSelectedItem("Línea 1");
+    Estacion[] existentes = todasLasEstaciones();
+    Object[] opcionesVecino = new Object[existentes.length + 1];
+    opcionesVecino[0] = "(sin conexión)";
+    for (int i = 0; i < existentes.length; i++) {
+        opcionesVecino[i + 1] = existentes[i];
+    }
+    JComboBox<Object> comboVecino =
+            new JComboBox<Object>(opcionesVecino);
+    // El tiempo permanece bloqueado hasta seleccionar una estación.
+    JLabel etiquetaTiempo = new JLabel("Tiempo de viaje (min):");
+    campoTiempo.setEnabled(false);
+    etiquetaTiempo.setEnabled(false);
+    comboVecino.addActionListener(e -> {
+        boolean hayVecino =
+                comboVecino.getSelectedItem() instanceof Estacion;
+        campoTiempo.setEnabled(hayVecino);
+        etiquetaTiempo.setEnabled(hayVecino);
+        if (!hayVecino) {
+            campoTiempo.setText("");
         }
-        JComboBox<Object> comboVecino = new JComboBox<Object>(opcionesVecino);
-
-        JPanel panel = new JPanel(new GridLayout(0, 2, 6, 6));
-        panel.add(new JLabel("ID:"));                         
-        panel.add(campoId);
-        panel.add(new JLabel("Nombre:"));                     
-        panel.add(campoNombre);
-        panel.add(new JLabel("Línea (elegir o escribir):"));  
-        panel.add(comboLinea);
-        panel.add(new JLabel("Capacidad:"));                  
-        panel.add(campoCapacidad);
-        panel.add(new JLabel("Conectar con:"));               
-        panel.add(comboVecino);
-        panel.add(new JLabel("Tiempo de viaje (min):"));      
-        panel.add(campoTiempo);
-
-        // Se valida dentro del bucle para no cerrar el formulario si hay 
-        // un error.
-        while (true) {
-            int r = JOptionPane.showConfirmDialog(this, panel, 
-                    "Agregar estación",
-                    JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-            if (r != JOptionPane.OK_OPTION) return;
-
-            String id = campoId.getText().trim();
-            String nombre = campoNombre.getText().trim();
-            Object editor = comboLinea.getEditor().getItem();
-            String linea = editor == null ? "" : editor.toString().trim();
-
-            String error = null;
-            int capacidad = 0;
-            double tiempo = 0;
-            Estacion vecino = null;
-
-            if (!textoValido(id) || !textoValido(nombre) || !textoValido(linea))
-            {
-                error = "ID, nombre y línea son obligatorios y no pueden "
-                        + "contener comas.";
-            } else if (id.startsWith("#") || id.equalsIgnoreCase("id") || 
-                    id.equalsIgnoreCase("origen")) {
-                // Estos valores están reservados por el formato del CSV.
-                error = "Ese ID está reservado por el formato CSV. Use otro.";
-            } else if (grafo.buscarEstacion(id) != null) {
-                error = "Ya existe una estación con el ID " + id + ".";
-            } else {
-                try {
-                    capacidad = Integer.parseInt(campoCapacidad.getText().
-                            trim());
-                    if (capacidad < 0) error = "La capacidad no puede ser "
-                            + "negativa.";
-                } catch (NumberFormatException ex) {
-                    error = "La capacidad debe ser un número entero.";
-                }
-            }
-
-            // Solo se lee el tiempo si el usuario eligió una estación vecina.
-            if (error == null && comboVecino.getSelectedItem() 
-                    instanceof Estacion) {
-                vecino = (Estacion) comboVecino.getSelectedItem();
-                tiempo = leerTiempo(campoTiempo.getText());
-                if (tiempo < 0) error = "Indique un tiempo de viaje mayor que 0"
-                        + " (por ejemplo 3.5).";
-            }
-            if (error != null) {
-                mostrarError(error);
-                continue;
-            }
-
-            Estacion nueva = new Estacion(id, nombre, linea, zona, capacidad);
-            grafo.agregarEstacion(nueva);
-            if (vecino != null) {
-                grafo.agregarConexion(nueva, vecino, tiempo);
-            }
-            visualizador.sincronizar();
-            mostrarMensaje("Estación agregada: " + nueva + " (línea " + linea 
-                    + ")" + (vecino != null ? ", conectada con " 
-                            + vecino.getNombre() + " (" + tiempo + " min)."
-                            : ", sin conexiones todavía."));
+    });
+    JPanel panel = new JPanel(new GridLayout(0, 2, 6, 6));
+    panel.add(new JLabel("ID:"));
+    panel.add(campoId);
+    panel.add(new JLabel("Nombre:"));
+    panel.add(campoNombre);
+    panel.add(new JLabel("Línea (elegir o escribir):"));
+    panel.add(comboLinea);
+    panel.add(new JLabel("Zona:"));
+    panel.add(campoZona);
+    panel.add(new JLabel("Capacidad:"));
+    panel.add(campoCapacidad);
+    panel.add(new JLabel("Conectar con:"));
+    panel.add(comboVecino);
+    panel.add(etiquetaTiempo);
+    panel.add(campoTiempo);
+    while (true) {
+        int r = JOptionPane.showConfirmDialog(
+                this,
+                panel,
+                "Agregar estación",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE
+        );
+        if (r != JOptionPane.OK_OPTION) {
             return;
         }
+        // Obtenemos los datos y normalizamos el texto.
+        String id = campoId.getText().trim().toUpperCase(
+                java.util.Locale.ROOT
+        );
+        // El ID se convierte a mayúsculas dentro del programa.
+        campoId.setText(id);
+        String nombre = campoNombre.getText().trim();
+        String zona = campoZona.getText().trim();
+        Object editor = comboLinea.getEditor().getItem();
+        String linea = editor == null ? "": editor.toString().trim();
+        // También se normaliza la línea a mayúsculas.
+        comboLinea.getEditor().setItem(linea);
+        String error = null;
+        int capacidad = 0;
+        double tiempo = 0;
+        Estacion vecino = null;
+        
+        // Validamos el nombre.
+        if (!textoSoloPalabrasYNumeros(nombre)) {
+            error = "El nombre de la estación es obligatorio.\n"
+                    + "Solo se permiten letras, números y espacios.";
+        }
+        
+        // Validamos la zona.
+        else if (!textoSoloPalabrasYNumeros(zona)) {
+            error = "La zona es obligatoria.\n"
+                    + "Solo se permiten letras, números y espacios.";
+        }
+
+        //Validamos el ID.
+        else {
+            String letrasNombre = nombre.replaceAll(
+                    "[^\\p{L}]",
+                    ""
+            ).toUpperCase(java.util.Locale.ROOT);
+            if (!id.matches("\\p{Lu}{3}")) {
+                error = "El ID debe contener exactamente tres letras "
+                        + "mayúsculas.";
+            } else if (letrasNombre.length() < 3) {
+                error = "El nombre de la estación debe contener al "
+                        + "menos tres letras para generar su ID.";
+            } else if (!id.equals(letrasNombre.substring(0, 3))) {
+                error = "El ID debe corresponder a las primeras tres "
+                        + "letras del nombre de la estación.\n"
+                        + "ID esperado: "
+                        + letrasNombre.substring(0, 3);
+            } else if (grafo.buscarEstacion(id) != null) {
+                error = "Ya existe una estación con el ID "
+                        + id + ".";
+            }
+        }
+
+       // Validamos la línea.
+        if (error == null) {
+            if (!linea.matches("(?iu)^l[ií]nea\\s+[0-9]+$")) {
+        error = "La línea debe tener el formato Línea n.\n"
+                + "Ejemplos válidos: Línea 1, Línea 2, Línea 10.";
+            } else {
+            // Extraer el número de línea.
+            String numeroLinea = linea.replaceFirst(
+                    "(?iu)^l[ií]nea\\s+","");
+            // Normalizar para almacenarlo sin tilde.
+            linea = "Linea " + numeroLinea;
+        }
     }
+
+        // Validamos la capacidad.
+        if (error == null) {
+            String textoCapacidad =
+                    campoCapacidad.getText().trim();
+            try {
+                if (!textoCapacidad.matches("[0-9]+")) {
+                    error = "La capacidad debe contener solamente "
+                            + "números enteros positivos.";
+                } else {
+                    capacidad = Integer.parseInt(textoCapacidad);
+                    if (capacidad < 100) {
+                        error = "La capacidad mínima permitida "
+                                + "es de 100 personas.";
+                    }
+                }
+
+            } catch (NumberFormatException ex) {
+                error = "La capacidad debe ser un número entero "
+                        + "dentro del rango permitido.";
+            }
+        }
+
+        // Validamos conexión y tiempo de viaje.
+        if (error == null
+                && comboVecino.getSelectedItem() instanceof Estacion) {
+            vecino = (Estacion) comboVecino.getSelectedItem();
+            String textoTiempo =
+                    campoTiempo.getText().trim();
+            try {
+                // Se permiten enteros y decimales.
+                // También se acepta coma como separador decimal.
+                if (!textoTiempo.matches(
+                        "[0-9]+([.,][0-9]+)?"
+                )) {error = "El tiempo de viaje debe ser un número "
+                            + "positivo.\nEjemplos: 3, 3.5 o 10.";
+                } else {
+                    tiempo = Double.parseDouble(
+                            textoTiempo.replace(',', '.')
+                    );
+                    if (tiempo <= 0
+                            || Double.isNaN(tiempo)
+                            || Double.isInfinite(tiempo)) {
+                        error = "El tiempo de viaje debe ser "
+                                + "mayor que cero.";
+                    }
+                }
+            } catch (NumberFormatException ex) {
+                error = "El tiempo de viaje debe ser un número "
+                        + "válido.";
+            }
+        }
+
+        // Mostramos los errores sin cerrar el formulario.
+        if (error != null) {
+            mostrarError(error);
+            continue;
+        }
+
+        // Creamos y agregamos la estación
+        Estacion nueva = new Estacion(
+                id,
+                nombre,
+                linea,
+                zona,
+                capacidad
+        );
+        grafo.agregarEstacion(nueva);
+        if (vecino != null) {
+            grafo.agregarConexion(
+                    nueva,
+                    vecino,
+                    tiempo
+            );
+        }
+        visualizador.sincronizar();
+        mostrarMensaje(
+                "Estación agregada: " + nueva
+                + "\nID: " + id
+                + "\nLínea: " + linea
+                + "\nZona: " + zona
+                + "\nCapacidad: " + capacidad
+                + (vecino != null
+                        ? "\nConectada con: " + vecino.getNombre()
+                          + "\nTiempo: " + tiempo + " min."
+                        : "\nSin conexiones todavía.")
+        );
+        return;
+    }
+}
 
     /**
      * Elimina una estación del grafo después de pedir confirmación.
@@ -501,57 +616,118 @@ public class VentanaPrincipal extends JFrame {
      * Permite analizar la red actual, simular la baja de una estación o simular
      * la baja de una línea completa.
      */
-    private void accionSubredes() {
-        if (grafo.numEstaciones() == 0) {
-            mostrarError("No hay datos cargados.");
+private void accionSubredes() {
+    if (grafo.numEstaciones() == 0) {
+        mostrarError("No hay datos cargados.");
+        return;
+    }
+    String[] opciones = {
+        "Red actual",
+        "Sin una estación",
+        "Sin una línea"
+    };
+    int op = JOptionPane.showOptionDialog(
+            this,
+            "¿Qué desea analizar?",
+            "Subredes aisladas",
+            JOptionPane.DEFAULT_OPTION,
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            opciones,
+            opciones[0]
+    );
+    if (op < 0) {
+        return;
+    }
+    if (op == 0) {
+        mostrarSubredes("red actual",analizador.detectarSubredesBFS());
+    } else if (op == 1) {
+        Estacion e = elegirEstacion(
+                "Simular baja de estación",
+                "Estación que se desconecta:",
+                todasLasEstaciones()
+        );
+        if (e == null) {
             return;
         }
-        String[] opciones = {"Red actual", "Sin una estación", "Sin una línea"};
-        int op = JOptionPane.showOptionDialog(this, "¿Qué desea analizar?", 
-                "Subredes aisladas",
-                JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, 
-                null, opciones, opciones[0]);
-        if (op < 0) return;
-
-        if (op == 0) {
-            mostrarSubredes("red actual", analizador.detectarSubredesBFS());
-        } else if (op == 1) {
-            Estacion e = elegirEstacion("Simular baja de estación", 
-                    "Estación que se desconecta:", todasLasEstaciones());
-            if (e == null) return;
-            mostrarSubredes("sin la estación " + e.getNombre(), 
-                    analizador.detectarSubredesSinEstacion(e.getId()));
-        } else {
-            String[] lineas = lineasExistentes();
-            Object sel = JOptionPane.showInputDialog(this, 
-                    "Línea que se desconecta:", "Simular baja de línea",
-                    JOptionPane.QUESTION_MESSAGE, null, lineas, lineas[0]);
-            if (sel == null) return;
-            mostrarSubredes("sin la línea " + sel, 
-                    analizador.detectarSubredesSinLinea((String) sel));
+        mostrarSubredes(
+                "sin la estación " + e.getNombre(),
+                analizador.detectarSubredesSinEstacion(e.getId())
+        );
+    } else {
+        String[] lineas = lineasExistentes();
+        if (lineas.length == 0) {
+            mostrarError("No existen líneas para analizar.");
+            return;
         }
+        // Mostrar las líneas con tilde en la interfaz.
+        for (int i = 0; i < lineas.length; i++) {
+            lineas[i] = lineas[i].replaceFirst(
+                    "(?iu)^l[ií]nea\\s+",
+                    "Línea "
+            );
+        }
+        JComboBox<String> comboLinea =
+                new JComboBox<String>(lineas);
+        // Solo se permite seleccionar líneas existentes.
+        comboLinea.setEditable(false);
+        int seleccion = JOptionPane.showConfirmDialog(
+                this,
+                comboLinea,
+                "Seleccionar línea que se desconectará",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.QUESTION_MESSAGE
+        );
+        if (seleccion != JOptionPane.OK_OPTION) {
+            return;
+        }
+        String lineaSeleccionada =
+                (String) comboLinea.getSelectedItem();
+        if (lineaSeleccionada == null) {
+            mostrarError("Debe seleccionar una línea.");
+            return;
+        }
+        // Convertir al formato interno sin tilde.
+        String linea = lineaSeleccionada.replaceFirst(
+                "(?iu)^l[ií]nea\\s+",
+                "Linea "
+        );
+        mostrarSubredes(
+                "sin la línea " + lineaSeleccionada,
+                analizador.detectarSubredesSinLinea(linea)
+        );
     }
-
+}
     /**
      * Muestra en el registro las subredes encontradas.
      *
-     * Cada subred es una {@link ListaEnlazada} dentro de otra lista. Si una
+     * Cada subred es una ListaEnlazada dentro de otra lista. Si una
      * subred tiene una sola estación, se marca como aislada.
      *
      * @param descripcion texto que indica qué caso se está analizando.
      * @param subredes    lista que contiene las subredes encontradas.
      */
-    private void mostrarSubredes(String descripcion, ListaEnlazada subredes) {
-        mostrarMensaje("Subredes (" + descripcion + "): " 
-                + subredes.obtenerTamano());
-        for (int i = 0; i < subredes.obtenerTamano(); i++) {
-            ListaEnlazada subred = (ListaEnlazada) subredes.obtener(i);
-            mostrarMensaje("  #" + (i + 1) + (subred.obtenerTamano() 
-                    == 1 ? " [AISLADA]" : "")
-                    + " (" + subred.obtenerTamano() + " estaciones): " 
-                    + listaATexto(subred, ", "));
-        }
+    private void mostrarSubredes(
+        String descripcion,
+        ListaEnlazada<ListaEnlazada<Estacion>> subredes) {
+            mostrarMensaje(
+                "Subredes (" + descripcion + "): "
+             + subredes.obtenerTamano()
+            );
+        Nodo<ListaEnlazada<Estacion>> actual = subredes.getCabeza();
+        int numeroSubred = 1;
+        while (actual != null) {
+        ListaEnlazada<Estacion> subred = actual.getDato();
+        mostrarMensaje(
+                "  #" + numeroSubred
+                + (subred.obtenerTamano() == 1 ? " [AISLADA]" : "")
+                + " (" + subred.obtenerTamano() + " estaciones): "
+                + listaATexto(subred, ", ")
+        );
+        actual = actual.getSiguiente();
+        numeroSubred++;
     }
+}
 
     /**
      * Calcula y muestra los hubs de la red.
@@ -837,4 +1013,13 @@ public class VentanaPrincipal extends JFrame {
      * @return visualizador encargado de dibujar la red.
      */
     public VisualizadorGrafo getVisualizador() { return visualizador; }
+
+    private boolean textoSoloPalabrasYNumeros(String texto) {
+    if (texto == null || texto.trim().isEmpty()) {
+        return false;
+    }
+    return texto.matches(
+            "[\\p{L}\\p{N}]+(?: +[\\p{L}\\p{N}]+)*"
+    );
+}
 }
