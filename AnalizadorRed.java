@@ -274,47 +274,6 @@ public class AnalizadorRed {
     }
 
     /**
-     * Recorre el grafo en profundidad (DFS) usando una pila manual.
-     */
-    public ListaEnlazada<Estacion> dfs(Estacion inicio) {
-        ListaEnlazada<Estacion> resultado = new ListaEnlazada<>();
-        if (!perteneceAlGrafo(inicio)) {
-            return resultado;
-        }
-        Estacion[] vertices = obtenerVertices();
-        IndiceVertices indiceVertices = construirIndice(vertices);
-        int posInicio = indiceVertices.buscar(inicio.getId());
-        if (posInicio == -1) {
-            return resultado;
-        }
-        boolean[] visitados = new boolean[vertices.length];
-        int[] pila = new int[vertices.length];
-        int tope = 0;
-        visitados[posInicio] = true;
-        pila[tope++] = posInicio;
-        while (tope > 0) {
-            int actual = pila[--tope];
-            resultado.insertar(vertices[actual]);
-            ListaEnlazada<Conexion> vecinos =
-                    grafo.obtenerVecinos(vertices[actual]);
-            for (Nodo<Conexion> nodo = vecinos.getCabeza();
-                  nodo != null;
-                  nodo = nodo.getSiguiente()) {
-                Conexion conexion = nodo.getDato();
-                int posicionVecino = indiceVertices.buscar(
-                        conexion.getDestino().getId()
-                );
-                if (posicionVecino != -1
-                        && !visitados[posicionVecino]) {
-                    visitados[posicionVecino] = true;
-                    pila[tope++] = posicionVecino;
-                }
-            }
-        }
-        return resultado;
-    }
-
-    /**
      * Obtiene las k estaciones con mayor centralidad de grado (hubs).
      */
     public ListaEnlazada<Estacion> calcularCentralidadGrado(int k) {
@@ -345,7 +304,9 @@ public class AnalizadorRed {
         return hubs;
     }
 
-    // Agrupa las estaciones en subredes saltando las que estén excluidas
+    /**
+     * Agrupa las estaciones en subredes saltando las que estén excluidas.
+     */
     private ListaEnlazada<ListaEnlazada<Estacion>>
             agruparSubredes(String idAusente, String lineaAusente) {
         ListaEnlazada<ListaEnlazada<Estacion>> subredes =
@@ -383,10 +344,14 @@ public class AnalizadorRed {
         return subredes;
     }
 
-    // Crea listas con las conexiones que llegan a cada vértice (para dirigidos)
+    /**
+     * Crea listas con las conexiones que llegan a cada vértice 
+     * (para dirigidos).
+     */
     private ListaEnlazada<Integer>[] construirConexionesEntrantes(
             Estacion[] vertices, IndiceVertices indiceVertices) {
-        ListaEnlazada<Integer>[] entrantes = crearArregloListas(vertices.length);
+        ListaEnlazada<Integer>[] entrantes = 
+                crearArregloListas(vertices.length);
         for (int i = 0; i < vertices.length; i++) {
             entrantes[i] = new ListaEnlazada<>();
         }
@@ -408,7 +373,9 @@ public class AnalizadorRed {
         return entrantes;
     }
 
-    // Método auxiliar para armar arreglos de listas de forma limpia
+    /**
+     * Método auxiliar para armar arreglos de listas de forma limpia.
+     */
     private ListaEnlazada<Integer>[] crearArregloListas(int tamano) {
         Object[] arreglo = new Object[tamano];
         for (int i = 0; i < tamano; i++) {
@@ -416,8 +383,10 @@ public class AnalizadorRed {
         }
         return (ListaEnlazada<Integer>[]) arreglo;
     }
-
-    // Recorre una subred usando BFS tanto por salidas como por entradas
+    
+    /**
+     * Recorre una subred usando BFS tanto por salidas como por entradas.
+     */
     private ListaEnlazada<Estacion> recorrerComponente(
             int inicio,
             Estacion[] vertices,
@@ -430,13 +399,11 @@ public class AnalizadorRed {
         Cola<Integer> pendientes = new Cola<>();
         asignadas[inicio] = true;
         pendientes.encolar(inicio);
-        
         while (!pendientes.esVacia()) {
             int actual = pendientes.desencolar();
             resultado.insertar(vertices[actual]);
             ListaEnlazada<Conexion> vecinos =
                     grafo.obtenerVecinos(vertices[actual]);
-            
             // Explora las conexiones salientes (hacia adelante)
             for (Nodo<Conexion> nodo = vecinos.getCabeza();
                   nodo != null;
@@ -455,7 +422,6 @@ public class AnalizadorRed {
                 asignadas[posicionVecino] = true;
                 pendientes.encolar(posicionVecino);
             }
-            
             // Explora las conexiones entrantes (hacia atrás).
             // NOTA: Reutiliza la misma estructura de validación y encolado
             // del bloque anterior pero en sentido inverso, permitiendo
@@ -480,7 +446,9 @@ public class AnalizadorRed {
         return resultado;
     }
 
-    // Pasa las estaciones de la lista a un arreglo plano para trabajar rápido
+    /**
+     * Pasa las estaciones de la lista a un arreglo plano para trabajar rápido.
+     */
     private Estacion[] obtenerVertices() {
         ListaEnlazada<Estacion> lista = grafo.getEstaciones();
         Estacion[] vertices = new Estacion[lista.obtenerTamano()];
@@ -493,7 +461,9 @@ public class AnalizadorRed {
         return vertices;
     }
 
-    // Llena el diccionario rápido con los IDs y posiciones de las estaciones
+    /**
+     * Llena el diccionario rápido con los IDs y posiciones de las estaciones.
+     */
     private IndiceVertices construirIndice(Estacion[] vertices) {
         IndiceVertices indice = new IndiceVertices(vertices.length);
         for (int i = 0; i < vertices.length; i++) {
@@ -502,7 +472,9 @@ public class AnalizadorRed {
         return indice;
     }
 
-    // Busca la estación no visitada con menor distancia para Dijkstra
+    /**
+     * Busca la estación no visitada con menor distancia para Dijkstra.
+     */ 
     private int buscarMinimo(
             double[] distancia, boolean[] visitado) {
         int mejor = -1;
@@ -516,7 +488,9 @@ public class AnalizadorRed {
         return mejor;
     }
 
-    // Revisa si la estación existe y pertenece al grafo actual
+    /**
+     * Revisa si la estación existe y pertenece al grafo actual.
+     */
     private boolean perteneceAlGrafo(Estacion estacion) {
         if (estacion == null) {
             return false;
@@ -524,7 +498,9 @@ public class AnalizadorRed {
         return grafo.buscarEstacion(estacion.getId()) == estacion;
     }
 
-    // Revisa si una estación está excluida por ID o por línea
+    /**
+     * Revisa si una estación está excluida por ID o por línea.
+     */
     private boolean estaAusente(
             Estacion estacion,
             String idAusente,
