@@ -37,19 +37,17 @@ import urbanroute.tda.Nodo;
 
 /**
  * Representa gráficamente la red de transporte.
- * <p>
  * Utiliza GraphStream exclusivamente para dibujar las estaciones y conexiones
  * que obtiene del {@link GrafoPonderado}. Cada línea de transporte se coloca
  * en una fila diferente y usa un color propio. Las conexiones entre estaciones
  * de distintas líneas se muestran como transbordos.
- * <p>
  * La clase no implementa algoritmos de grafos ni administra las estructuras
  * principales de la red: solo se encarga de la parte visual. Los datos siguen
  * viviendo en el modelo, y aquí se leen para construir el dibujo.
  */
 public class VisualizadorGrafo {
 
-   /** 
+ /** 
  * Colores asignados a las líneas de transporte. 
  * Si hay más líneas que colores, se vuelven a usar desde el principio.
  */
@@ -66,45 +64,65 @@ private static final String[] PALETA = {
     "#7f7f7f"  // Línea 10: gris
 };
 
-    /** Color utilizado para resaltar rutas y estaciones. */
+    /** 
+     * Color utilizado para resaltar rutas y estaciones. 
+     */
     private static final String COLOR_RESALTADO = "#e8453c";
 
-    /** Separación horizontal entre estaciones de una misma línea. */
+    /** 
+     * Separación horizontal entre estaciones de una misma línea. 
+     */
     private static final double ESPACIO_X = 3.0;
 
-    /** Separación vertical entre líneas de transporte. */
+    /** 
+     * Separación vertical entre líneas de transporte. 
+     */
     private static final double ESPACIO_Y = 4.0;
 
-    /** Grafo propio que contiene los datos de la red. */
+    /** 
+     * Grafo propio que contiene los datos de la red. 
+     */
     private GrafoPonderado grafo;
 
-    /** Ventana principal de UrbanRoute. */
+    /** 
+     * Ventana principal de UrbanRoute. 
+     */
     private VentanaPrincipal ventana;
 
-    /** Grafo de GraphStream utilizado únicamente para la representación gráfica. */
+    /** 
+     * Grafo de GraphStream utilizado únicamente para la representación gráfica.
+     */
     private Graph graphStream;
 
-    /** Administrador de la vista gráfica de GraphStream. */
+    /** 
+     * Administrador de la vista gráfica de GraphStream. 
+     */
     private Viewer viewer;
 
-    /** Componente gráfico que muestra la red. */
+    /** 
+     * Componente gráfico que muestra la red. 
+     */
     private View view;
 
-    /** Ventana independiente que puede mostrar el grafo. */
+    /** 
+     * Ventana independiente que puede mostrar el grafo. 
+     */
     private JFrame frame;
 
-    /** Último punto utilizado para desplazar la representación gráfica. */
+    /** 
+     * Último punto utilizado para desplazar la representación gráfica. 
+     */
     private Point ultimoPunto;
 
-    /** Panel que contiene la leyenda de las líneas de transporte. */
+    /** 
+     * Panel que contiene la leyenda de las líneas de transporte. 
+     */
     private JPanel leyenda;
 
     /**
      * Inicializa el visualizador asociado al grafo de transporte.
-     * <p>
      * Se guarda la referencia al grafo y a la ventana principal, y se indica a
      * GraphStream que use el backend de Swing.
-     *
      * @param grafo   grafo del modelo que se va a dibujar.
      * @param ventana ventana principal desde la que se abre el visualizador.
      * @throws IllegalArgumentException si el grafo es {@code null}.
@@ -125,11 +143,9 @@ private static final String[] PALETA = {
 
     /**
      * Construye desde cero la representación gráfica de la red.
-     * <p>
      * Crea el grafo visual, aplica la hoja de estilos, genera los nodos con
      * sus posiciones según la línea de transporte y agrega las conexiones
      * correspondientes.
-     * <p>
      * Este método debe ejecutarse desde el hilo de eventos de Swing cuando el
      * visualizador esté asociado a una interfaz gráfica.
      */
@@ -148,12 +164,10 @@ private static final String[] PALETA = {
 
     /**
      * Crea o actualiza los nodos gráficos de todas las estaciones.
-     * <p>
      * Recorre las líneas y, para cada una, coloca sus estaciones en una fila.
      * Dentro de la fila, las estaciones se distribuyen horizontalmente según
      * el orden en que aparecen en el grafo. Si el nodo visual ya existe, se
      * reutiliza y solo se actualizan sus atributos.
-     * <p>
      * Este método también se usa durante la sincronización, así que debe
      * encargarse tanto de crear nodos nuevos como de actualizar los que ya
      * están dibujados.
@@ -163,7 +177,6 @@ private static final String[] PALETA = {
         ListaEnlazada<Estacion> estaciones =
                 grafo.getEstaciones();
         int fila = 0;
-
         // Cada línea ocupa una fila; dentro de la fila, las estaciones se
         // reparten en columnas según el orden en que aparecen en el grafo.
         Nodo<String> nodoLinea = lineas.getCabeza();
@@ -177,7 +190,6 @@ private static final String[] PALETA = {
                 if (estacion.getLinea().equals(linea)) {
                     Node nodoVisual =
                             graphStream.getNode(estacion.getId());
-
                     // Si el nodo visual ya existe (por ejemplo al sincronizar)
                     // se reutiliza; si no, se crea en este momento.
                     if (nodoVisual == null) {
@@ -201,11 +213,9 @@ private static final String[] PALETA = {
 
     /**
      * Configura los atributos visuales de una estación.
-     * <p>
      * Actualiza la etiqueta, la posición, la clase de color y, si la columna
      * es impar, coloca el texto debajo del nodo para alternar la alineación
      * y evitar que las etiquetas se superpongan.
-     *
      * @param nodoVisual nodo de GraphStream que representa la estación.
      * @param estacion   estación del modelo con los datos a mostrar.
      * @param columna    columna que ocupa la estación dentro de su línea.
@@ -221,7 +231,6 @@ private static final String[] PALETA = {
                 "ui.label",
                 estacion.getNombre()
         );
-
         // La fila se invierte en el eje Y para que la primera línea quede arriba.
         nodoVisual.setAttribute(
                 "xy",
@@ -233,7 +242,6 @@ private static final String[] PALETA = {
                 "ui.class",
                 clase
         );
-
         // Alternar la alineación del texto evita que las etiquetas de columnas
         // consecutivas se solapen.
         if (columna % 2 == 1) {
@@ -248,7 +256,6 @@ private static final String[] PALETA = {
 
     /**
      * Agrega las conexiones del grafo propio a GraphStream.
-     * <p>
      * En grafos no dirigidos, una misma conexión aparece en las listas de
      * adyacencia de ambas estaciones. Para no dibujarla dos veces se utiliza
      * un identificador canónico: los dos sentidos producen el mismo ID y solo
@@ -273,7 +280,6 @@ private static final String[] PALETA = {
                 String destino = conexion.getDestino().getId();
                 String idArista =
                         identificadorArista(origen, destino);
-
                 // Si la arista ya existe (típico en grafos no dirigidos, donde
                 // la conexión aparece en los dos sentidos) no se vuelve a crear.
                 if (graphStream.getEdge(idArista) == null) {
@@ -300,11 +306,9 @@ private static final String[] PALETA = {
 
     /**
      * Construye la hoja de estilos utilizada por GraphStream.
-     * <p>
      * Cada línea recibe un color de la paleta. Los transbordos se muestran
      * con líneas discontinuas y las rutas seleccionadas usan el color de
      * resaltado.
-     *
      * @return hoja de estilos CSS de GraphStream.
      */
     private String crearEstilos() {
@@ -321,22 +325,22 @@ private static final String[] PALETA = {
                 + " text-size: 10px; }"
         );
 
-                // Se genera una clase de estilo por cada línea, usando la paleta
+        // Se genera una clase de estilo por cada línea, usando la paleta
         // de forma cíclica para que no falten colores si hay más líneas.
         ListaEnlazada<String> lineas = grafo.obtenerLineas();
         Nodo<String> nodoLinea = lineas.getCabeza();
         int indice = 0;
         while (nodoLinea != null) {
             String color = PALETA[indice % PALETA.length];
-
-            // Primero se arma el texto de la clase para el nodo y luego se agrega
-            String estiloNodo = "node.linea" + indice + " { fill-color: " + color + "; }";
+            // Primero se arma el texto de la clase para el nodo 
+            // y luego se agrega
+            String estiloNodo = "node.linea" + indice 
+                    + " { fill-color: " + color + "; }";
             css.append(estiloNodo);
-
             // Lo mismo para la conexión (arista)
-            String estiloArista = "edge.linea" + indice + " { fill-color: " + color + "; size: 3px; }";
+            String estiloArista = "edge.linea" + indice 
+                    + " { fill-color: " + color + "; size: 3px; }";
             css.append(estiloArista);
-
             indice++;
             nodoLinea = nodoLinea.getSiguiente();
         }
@@ -362,10 +366,8 @@ private static final String[] PALETA = {
 
     /**
      * Obtiene el índice que corresponde a una línea de transporte.
-     * <p>
      * El índice determina el color y la fila que usará la línea en la
      * representación gráfica.
-     *
      * @param linea nombre de la línea que se quiere buscar.
      * @return posición de la línea o {@code -1} si no existe.
      */
@@ -385,10 +387,8 @@ private static final String[] PALETA = {
 
     /**
      * Obtiene la clase visual correspondiente a una línea.
-     * <p>
      * Si la línea no existe en la red, se devuelve {@code "linea0"} como
      * valor seguro para no dejar nodos sin estilo.
-     *
      * @param linea nombre de la línea.
      * @return clase CSS asignada a la línea.
      */
@@ -402,11 +402,9 @@ private static final String[] PALETA = {
 
     /**
      * Determina la clase visual de una conexión.
-     * <p>
      * Si las dos estaciones pertenecen a la misma línea, la conexión usa el
      * color de esa línea. Si son de líneas distintas, se marca como
      * transbordo.
-     *
      * @param conexion conexión que se quiere clasificar.
      * @return clase CSS correspondiente a la conexión.
      */
@@ -423,14 +421,11 @@ private static final String[] PALETA = {
 
     /**
      * Genera un identificador único para una conexión.
-     * <p>
      * En un grafo dirigido se conserva el orden origen-destino. En un grafo
      * no dirigido se ordenan los dos IDs para que ambos sentidos de una misma
      * conexión produzcan el mismo identificador.
-     * <p>
      * La longitud de cada ID forma parte de la clave para evitar
      * ambigüedades si los IDs contienen separadores.
-     *
      * @param origen  ID de la estación de origen.
      * @param destino ID de la estación de destino.
      * @return identificador de la arista gráfica.
@@ -441,7 +436,6 @@ private static final String[] PALETA = {
     ) {
         String primero = origen;
         String segundo = destino;
-
         // En un grafo no dirigido da igual el orden, así que se ordenan los
         // IDs para que A->B y B->A generen la misma arista.
         if (!grafo.esDirigido()
@@ -456,10 +450,8 @@ private static final String[] PALETA = {
     /**
      * Construye y devuelve el componente Swing que contiene la representación
      * visual del grafo.
-     * <p>
      * La vista incluye botones de zoom, un botón para ajustar la cámara,
      * controles de ratón para desplazar la red y una leyenda de colores.
-     *
      * @return panel Swing que contiene la representación gráfica.
      */
     public Component obtenerComponenteVista() {
@@ -473,40 +465,14 @@ private static final String[] PALETA = {
         view = viewer.addDefaultView(false);
         Component componenteVista = (Component) view;
         instalarControlesMouse(componenteVista);
-
-        JPanel barra = new JPanel(
-                new FlowLayout(FlowLayout.LEFT)
-        );
-        barra.add(
-                boton(
-                        "Zoom +",
-                        () -> zoom(0.8)
-                )
-        );
-        barra.add(
-                boton(
-                        "Zoom -",
-                        () -> zoom(1.25)
-                )
-        );
-        barra.add(
-                boton(
-                        "Ajustar",
-                        () -> reiniciarVista()
-                )
-        );
-        barra.add(
-                new JLabel(
-                        "    Rueda: zoom | "
-                        + "Clic derecho o central + arrastrar: mover"
-                )
-        );
-
-        leyenda = new JPanel(
-                new FlowLayout(FlowLayout.LEFT)
-        );
+        JPanel barra = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        barra.add(boton("Zoom +", () -> zoom(0.8)));
+        barra.add(boton("Zoom -", () -> zoom(1.25)));
+        barra.add(boton("Ajustar", () -> reiniciarVista()));
+        barra.add(new JLabel("    Rueda: zoom | "
+                + "Clic derecho o central + arrastrar: mover"));
+        leyenda = new JPanel(new FlowLayout(FlowLayout.LEFT));
         llenarLeyenda();
-
         JPanel panel = new JPanel(new BorderLayout());
         panel.add(barra, BorderLayout.NORTH);
         panel.add(componenteVista, BorderLayout.CENTER);
@@ -516,7 +482,6 @@ private static final String[] PALETA = {
 
     /**
      * Muestra el grafo en una ventana independiente.
-     * <p>
      * Al cerrar la ventana se libera el {@link Viewer} y se actualiza el
      * estado interno del visualizador.
      */
@@ -532,7 +497,6 @@ private static final String[] PALETA = {
         nuevaVentana.add(panel);
         nuevaVentana.setSize(950, 650);
         nuevaVentana.setLocationRelativeTo(null);
-
         // Al cerrar la ventana se libera el Viewer y el grafo visual, para
         // no dejar recursos colgando entre aperturas.
         nuevaVentana.addWindowListener(new WindowAdapter() {
@@ -562,7 +526,6 @@ private static final String[] PALETA = {
 
     /**
      * Cierra la ventana independiente del visualizador, si existe.
-     * <p>
      * También libera el {@link Viewer} asociado.
      */
     private void cerrarVentana() {
@@ -576,7 +539,6 @@ private static final String[] PALETA = {
 
     /**
      * Construye la leyenda de las líneas de transporte.
-     * <p>
      * Cada línea se muestra con el color que usa en el grafo. Al final se
      * agrega una referencia visual para los transbordos.
      */
@@ -610,10 +572,8 @@ private static final String[] PALETA = {
 
     /**
      * Indica si existe una vista gráfica activa.
-     * <p>
      * No basta con que se haya construido el grafo de GraphStream: también
      * deben existir el {@link Viewer} y la vista.
-     *
      * @return {@code true} si la vista gráfica está construida y activa.
      */
     public boolean estaMostrandose() {
@@ -624,7 +584,6 @@ private static final String[] PALETA = {
 
     /**
      * Sincroniza la representación visual con el grafo propio.
-     * <p>
      * Elimina los nodos que ya no existen, reconstruye las conexiones y
      * actualiza etiquetas, posiciones, colores y leyenda. Si se invoca desde
      * otro hilo, programa la actualización en el hilo de eventos de Swing.
@@ -639,7 +598,6 @@ private static final String[] PALETA = {
         if (graphStream == null) {
             return;
         }
-
         // Primero se eliminan las aristas. Así no quedan referencias a nodos
         // que están a punto de desaparecer y las conexiones se vuelven a
         // dibujar desde cero con los datos actuales del modelo.
@@ -647,7 +605,6 @@ private static final String[] PALETA = {
             Edge arista = graphStream.getEdge(i);
             graphStream.removeEdge(arista);
         }
-
         // Se eliminan los nodos cuyas estaciones ya no existen en el grafo
         // propio (por ejemplo tras eliminar una estación).
         for (int i = graphStream.getNodeCount() - 1; i >= 0; i--) {
@@ -656,18 +613,12 @@ private static final String[] PALETA = {
                 graphStream.removeNode(nodo);
             }
         }
-
         // Se actualizan los estilos por si se agregaron o eliminaron líneas
         // de transporte.
-        graphStream.setAttribute(
-                "ui.stylesheet",
-                crearEstilos()
-        );
-
+        graphStream.setAttribute("ui.stylesheet",crearEstilos());
         // Se actualizan todos los nodos. También se recalculan sus posiciones
         // para reflejar los cambios de línea y las nuevas estaciones.
         crearNodos();
-
         // Se vuelven a dibujar las conexiones existentes y se refresca la leyenda.
         agregarAristas();
         llenarLeyenda();
@@ -675,7 +626,6 @@ private static final String[] PALETA = {
 
     /**
      * Crea un botón para ejecutar una acción gráfica.
-     *
      * @param texto  texto que se mostrará en el botón.
      * @param accion acción que se ejecuta al pulsar el botón.
      * @return botón configurado.
@@ -688,10 +638,8 @@ private static final String[] PALETA = {
 
     /**
      * Instala los controles de ratón sobre la vista de GraphStream.
-     * <p>
      * La rueda permite acercar y alejar el dibujo. El botón derecho o el
      * central permiten desplazar la cámara arrastrando.
-     *
      * @param componenteVista componente gráfico que recibirá los eventos.
      */
     private void instalarControlesMouse(Component componenteVista) {
@@ -704,7 +652,6 @@ private static final String[] PALETA = {
                     zoom(1.15);
                 }
             }
-
             @Override
             public void mousePressed(MouseEvent e) {
                 // Solo se inicia el arrastre con el botón derecho o el central.
@@ -713,19 +660,16 @@ private static final String[] PALETA = {
                     ultimoPunto = e.getPoint();
                 }
             }
-
             @Override
             public void mouseReleased(MouseEvent e) {
                 ultimoPunto = null;
             }
-
             @Override
             public void mouseDragged(MouseEvent e) {
                 if (ultimoPunto == null || view == null) {
                     return;
                 }
                 Camera camara = view.getCamera();
-
                 // Se pasa de píxeles a unidades del grafo. Si la proporción no
                 // es válida (por ejemplo antes de que la cámara esté lista),
                 // no se hace nada para evitar movimientos raros.
@@ -741,7 +685,6 @@ private static final String[] PALETA = {
                         e.getX() - ultimoPunto.x;
                 double desplazamientoY =
                         e.getY() - ultimoPunto.y;
-
                 // Se invierte el eje Y porque la pantalla crece hacia abajo
                 // y el grafo crece hacia arriba.
                 camara.setViewCenter(
@@ -759,10 +702,8 @@ private static final String[] PALETA = {
 
     /**
      * Acerca o aleja la representación gráfica.
-     * <p>
      * El porcentaje de vista se limita entre 0.02 y 5.0 para evitar que la
      * cámara se aleje o acerque demasiado.
-     *
      * @param factor factor de ampliación o reducción.
      */
     private void zoom(double factor) {
@@ -793,7 +734,6 @@ private static final String[] PALETA = {
 
     /**
      * Resalta visualmente una estación por su identificador.
-     *
      * @param id ID de la estación que se quiere resaltar.
      */
     public void resaltarNodo(String id) {
@@ -814,11 +754,9 @@ private static final String[] PALETA = {
 
     /**
      * Resalta las estaciones y conexiones de una ruta.
-     * <p>
      * Recibe una lista enlazada de estaciones ordenadas según el recorrido
      * calculado por Dijkstra. En grafos dirigidos, las conexiones se buscan
      * respetando el sentido de cada tramo.
-     *
      * @param rutaEstaciones lista de estaciones que forman la ruta.
      */
     public void resaltarRuta(
@@ -840,7 +778,6 @@ private static final String[] PALETA = {
         while (nodo != null) {
             Estacion actual = nodo.getDato();
             resaltarNodo(actual.getId());
-
             // Se va conectando cada estación con la anterior para resaltar
             // también las aristas del recorrido.
             if (anterior != null) {
@@ -859,7 +796,6 @@ private static final String[] PALETA = {
 
     /**
      * Restablece los colores originales de las estaciones y conexiones.
-     * <p>
      * Los colores se recalculan a partir de las líneas y de los extremos de
      * cada conexión del grafo propio.
      */
@@ -906,11 +842,9 @@ private static final String[] PALETA = {
 
     /**
      * Busca la representación gráfica de una conexión.
-     * <p>
      * En grafos dirigidos solo se busca el sentido solicitado. En grafos no
      * dirigidos se usa el identificador canónico, así que ambos sentidos
      * corresponden a la misma arista.
-     *
      * @param origen  ID de la estación de origen.
      * @param destino ID de la estación de destino.
      * @return arista encontrada o {@code null} si no existe.
@@ -925,7 +859,6 @@ private static final String[] PALETA = {
 
     /**
      * Obtiene el grafo propio utilizado como fuente de información.
-     *
      * @return grafo del modelo asociado al visualizador.
      */
     public GrafoPonderado getGrafo() {
@@ -934,7 +867,6 @@ private static final String[] PALETA = {
 
     /**
      * Obtiene la ventana principal asociada al visualizador.
-     *
      * @return ventana principal de UrbanRoute.
      */
     public VentanaPrincipal getVentana() {
