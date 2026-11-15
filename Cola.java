@@ -1,11 +1,18 @@
 package urbanroute.tda;
 
 /**
- * Cola con estructura FIFO hecha con nodos de complejida O(1).
+ * Cola con estructura FIFO hecha con nodos de complejidad O(1).
  * Se usa para el recorrido BFS.
  */
 public class Cola<T> {
+    /**
+     * Referencia o apuntador al primer nodo de la cola.
+     */
     private Nodo<T> frente;
+    
+     /**
+     * Referencia o apuntador al último nodo de la cola.
+     */
     private Nodo<T> fin;
     private int tamano;
 
