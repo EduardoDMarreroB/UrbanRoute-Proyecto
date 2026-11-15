@@ -40,35 +40,50 @@ import urbanroute.tda.Nodo;
  */
 public class VentanaPrincipal extends JFrame {
 
-    /** Tabla hash donde se guardan las estaciones usando su ID como clave. */
+    /**
+     * Tabla hash donde se guardan las estaciones usando su ID como clave. 
+     */
     private TablaHash tabla;
 
-    /** Grafo ponderado que representa la red de estaciones y conexiones. */
+    /** 
+     * Grafo ponderado que representa la red de estaciones y conexiones. 
+     */
     private GrafoPonderado grafo;
 
-    /** Gestor encargado de leer y escribir los archivos CSV. */
+    /** 
+     * Gestor encargado de leer y escribir los archivos CSV. 
+     */
     private GestorArchivo gestor;
 
-    /** Analizador que ejecuta los algoritmos sobre el grafo. */
+    /** 
+     * Analizador que ejecuta los algoritmos sobre el grafo. 
+     */
     private AnalizadorRed analizador;
 
-    /** Visualizador que dibuja el grafo en la ventana. */
+    /** 
+     * Visualizador que dibuja el grafo en la ventana. 
+     */
     private VisualizadorGrafo visualizador;
 
-    /** Área de texto donde se van mostrando los mensajes de la aplicación. */
+    /** 
+     * Área de texto donde se van mostrando los mensajes de la aplicación.
+     */
     private JTextArea areaLog;
 
-    /** Última carpeta usada en los diálogos de archivos, para no empezar 
-     * siempre desde cero. */
+    /** 
+     * Última carpeta usada en los diálogos de archivos, para no empezar 
+     * siempre desde cero. 
+     */
     private File ultimaCarpeta;
 
-    /** Panel que divide la zona del grafo y el registro de mensajes. */
+    /** 
+     * Panel que divide la zona del grafo y el registro de mensajes. 
+     */
     private JSplitPane panelDividido;
     private String zona;
 
     /**
      * Crea la ventana principal y todos los objetos que necesita la aplicación.
-     *
      * Primero se crean el modelo y los controladores. Después se conectan el
      * analizador y el visualizador para que puedan comunicarse entre sí.
      */
@@ -85,7 +100,6 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Construye y organiza los componentes de la interfaz gráfica.
-     *
      * La barra superior agrupa las acciones por tipo: archivos, red y análisis.
      * En el centro se coloca el panel dividido que muestra el grafo y el 
      * registro.
@@ -136,7 +150,6 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Crea un botón y le asocia la acción que debe ejecutar.
-     *
      * @param texto  texto que se mostrará en el botón.
      * @param accion acción que se ejecuta al pulsar el botón.
      * @return el botón ya configurado.
@@ -148,11 +161,9 @@ public class VentanaPrincipal extends JFrame {
     }
 
     /**
-     * Crea un panel con título y una cuadrícula de botones.
-     * 
+     * Crea un panel con título y una cuadrícula de botones. 
      * Si se pasan menos de cuatro botones, se rellenan los huecos con etiquetas
      * vacías para que la cuadrícula no cambie de tamaño.
-     *
      * @param titulo  título del panel.
      * @param botones botones que se quieren colocar dentro.
      * @return panel configurado con los botones indicados.
@@ -171,14 +182,12 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Carga el diccionario de estaciones desde un archivo CSV.
-     *
      * Si ya hay estaciones en memoria, se pide confirmación porque cargar otro
      * diccionario borra las estaciones y conexiones actuales.
      */
     private void accionCargarEstaciones() {
         File f = elegirArchivo("Seleccionar diccionario.csv");
         if (f == null) return;
-
         // Cargar otro diccionario reinicia el grafo, así que se avisa antes 
         // de borrar nada.
         if (tabla.obtenerTamano() > 0 && !confirmarAdvertencia(
@@ -200,7 +209,6 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Carga las conexiones del grafo desde un archivo CSV.
-     * 
      * Antes de cargar conexiones se comprueba que existan estaciones, porque
      * una conexión siempre debe unir dos estaciones ya registradas.
      */
@@ -211,7 +219,6 @@ public class VentanaPrincipal extends JFrame {
         }
         File f = elegirArchivo("Seleccionar grafo.csv");
         if (f == null) return;
-
         // Si ya hay conexiones, se reemplazan por las del archivo.
         if (grafo.numConexiones() > 0 && !confirmarAdvertencia(
                 "Ya hay conexiones en memoria. Se reemplazarán por las del"
@@ -232,7 +239,6 @@ public class VentanaPrincipal extends JFrame {
     /**
      * Guarda el estado actual de la red en dos archivos CSV dentro de una 
      * carpeta.
-     *
      * El usuario elige la carpeta destino y se avisa si ya existen
      * {@code diccionario.csv} o {@code grafo.csv}, porque serán sobrescritos.
      */
@@ -242,10 +248,8 @@ public class VentanaPrincipal extends JFrame {
                 + "y grafo.csv)");
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         if (fc.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) return;
-
         File carpeta = fc.getSelectedFile();
         ultimaCarpeta = carpeta;
-
         if ((new File(carpeta, "diccionario.csv").exists() || 
                 new File(carpeta, "grafo.csv").exists())
                 && !confirmarAdvertencia("Los archivos CSV existentes en esa "
@@ -262,7 +266,6 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Muestra el grafo en el panel superior de la ventana.
-     * 
      * Se conserva la posición del divisor para que el cambio de panel no mueva
      * la vista que el usuario ya tenía.
      */
@@ -280,7 +283,7 @@ public class VentanaPrincipal extends JFrame {
     }
     
     /**
-    * Permite seleccionar una estación y consultar todas sus propiedades.
+     * Permite seleccionar una estación y consultar todas sus propiedades.
      */
     private void accionVerDetalleEstacion() {
         if (grafo.numEstaciones() == 0) {
@@ -312,7 +315,6 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Pide los datos de una nueva estación y la agrega al grafo.
-     * 
      * El formulario se repite mientras haya errores de validación, de modo que
      * el usuario pueda corregir los datos sin perder lo que ya escribió.
      */
@@ -498,20 +500,10 @@ public class VentanaPrincipal extends JFrame {
         }
 
         // Creamos y agregamos la estación
-        Estacion nueva = new Estacion(
-                id,
-                nombre,
-                linea,
-                zona,
-                capacidad
-        );
+        Estacion nueva = new Estacion(id, nombre, linea, zona, capacidad);
         grafo.agregarEstacion(nueva);
         if (vecino != null) {
-            grafo.agregarConexion(
-                    nueva,
-                    vecino,
-                    tiempo
-            );
+            grafo.agregarConexion(nueva, vecino, tiempo);
         }
         visualizador.sincronizar();
         mostrarMensaje(
@@ -531,7 +523,6 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Elimina una estación del grafo después de pedir confirmación.
-     * 
      * Antes de eliminarla se guarda su grado para poder informar cuántas
      * conexiones se van a perder junto con la estación.
      */
@@ -539,7 +530,6 @@ public class VentanaPrincipal extends JFrame {
         Estacion e = elegirEstacion("Eliminar estación", "Seleccione la "
                 + "estación a eliminar:", todasLasEstaciones());
         if (e == null) return;
-
         int conexiones = e.getGrado();
         if (!confirmarAdvertencia("Se eliminará " + e + " y sus " + conexiones 
                 + " conexiones. ¿Continuar?")) {
@@ -553,7 +543,6 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Agrega o actualiza una conexión entre dos estaciones.
-     * 
      * Se eligen origen y destino, y luego se pide el tiempo de viaje. Si la
      * conexión ya existía, el grafo la actualiza y solo cambia el mensaje.
      */
@@ -561,16 +550,13 @@ public class VentanaPrincipal extends JFrame {
         Estacion origen = elegirEstacion("Agregar conexión", 
                 "Estación de origen:", todasLasEstaciones());
         if (origen == null) return;
-
         Estacion destino = elegirEstacion("Agregar conexión", 
                 "Estación de destino:", todasExcepto(origen));
         if (destino == null) return;
-
         Double tiempo = pedirTiempo("Tiempo de viaje entre " 
                 + origen.getNombre() + " y " + destino.getNombre() 
                 + " (minutos):");
         if (tiempo == null) return;
-
         boolean yaExistia = grafo.buscarConexion(origen, destino) != null;
         grafo.agregarConexion(origen, destino, tiempo);
         visualizador.sincronizar();
@@ -582,7 +568,6 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Elimina la conexión entre dos estaciones.
-     * 
      * Primero se elige la estación de origen y después solo se ofrecen sus
      * vecinos directos, porque no tiene sentido borrar una conexión que no existe.
      */
@@ -590,17 +575,14 @@ public class VentanaPrincipal extends JFrame {
         Estacion origen = elegirEstacion("Eliminar conexión", 
                 "Estación de origen:", todasLasEstaciones());
         if (origen == null) return;
-
         Estacion[] vecinos = vecinosDe(origen);
         if (vecinos.length == 0) {
             mostrarError(origen.getNombre() + " no tiene conexiones.");
             return;
         }
-
         Estacion destino = elegirEstacion("Eliminar conexión", 
                 "Conexión con:", vecinos);
         if (destino == null) return;
-
         grafo.eliminarConexion(origen, destino);
         visualizador.sincronizar();
         mostrarMensaje("Conexión eliminada: " + origen.getNombre() 
@@ -609,7 +591,6 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Calcula y muestra la ruta mínima entre dos estaciones.
-     * 
      * Usa el algoritmo de Dijkstra del analizador. Si no hay camino, se avisa
      * al usuario. Si hay ruta, se muestra en el registro y se resalta en el 
      * grafo.
@@ -618,11 +599,9 @@ public class VentanaPrincipal extends JFrame {
         Estacion origen = elegirEstacion("Ruta mínima", "Estación de origen:",
                 todasLasEstaciones());
         if (origen == null) return;
-
         Estacion destino = elegirEstacion("Ruta mínima", "Estación de destino:",
                 todasLasEstaciones());
         if (destino == null) return;
-
         ListaEnlazada ruta = analizador.dijkstra(origen.getId(), 
                 destino.getId());
         if (ruta == null) {
@@ -644,21 +623,20 @@ public class VentanaPrincipal extends JFrame {
 
     /**
      * Analiza las subredes aisladas de la red.
-     * 
      * Permite analizar la red actual, simular la baja de una estación o simular
      * la baja de una línea completa.
      */
-private void accionSubredes() {
-    if (grafo.numEstaciones() == 0) {
-        mostrarError("No hay datos cargados.");
-        return;
-    }
-    String[] opciones = {
-        "Red actual",
-        "Sin una estación",
-        "Sin una línea"
-    };
-    int op = JOptionPane.showOptionDialog(
+    private void accionSubredes() {
+        if (grafo.numEstaciones() == 0) {
+            mostrarError("No hay datos cargados.");
+            return;
+        }
+        String[] opciones = {
+            "Red actual",
+            "Sin una estación",
+            "Sin una línea"
+        };
+        int op = JOptionPane.showOptionDialog(
             this,
             "¿Qué desea analizar?",
             "Subredes aisladas",
@@ -667,31 +645,31 @@ private void accionSubredes() {
             null,
             opciones,
             opciones[0]
-    );
-    if (op < 0) {
-        return;
-    }
-    if (op == 0) {
-        mostrarSubredes("red actual",analizador.detectarSubredesBFS());
-    } else if (op == 1) {
-        Estacion e = elegirEstacion(
-                "Simular baja de estación",
-                "Estación que se desconecta:",
-                todasLasEstaciones()
         );
+        if (op < 0) {
+            return;
+        }
+        if (op == 0) {
+            mostrarSubredes("red actual",analizador.detectarSubredesBFS());
+            } else if (op == 1) {
+                Estacion e = elegirEstacion(
+                    "Simular baja de estación",
+                    "Estación que se desconecta:",
+                    todasLasEstaciones()
+            );
         if (e == null) {
             return;
         }
         mostrarSubredes(
                 "sin la estación " + e.getNombre(),
                 analizador.detectarSubredesSinEstacion(e.getId())
-        );
-    } else {
-        String[] lineas = lineasExistentes();
-        if (lineas.length == 0) {
-            mostrarError("No existen líneas para analizar.");
-            return;
-        }
+            );
+        } else {
+            String[] lineas = lineasExistentes();
+            if (lineas.length == 0) {
+                mostrarError("No existen líneas para analizar.");
+                return;
+            }
         // Mostrar las líneas con tilde en la interfaz.
         for (int i = 0; i < lineas.length; i++) {
             lineas[i] = lineas[i].replaceFirst(
@@ -699,8 +677,7 @@ private void accionSubredes() {
                     "Línea "
             );
         }
-        JComboBox<String> comboLinea =
-                new JComboBox<String>(lineas);
+        JComboBox<String> comboLinea = new JComboBox<String>(lineas);
         // Solo se permite seleccionar líneas existentes.
         comboLinea.setEditable(false);
         int seleccion = JOptionPane.showConfirmDialog(
@@ -713,8 +690,7 @@ private void accionSubredes() {
         if (seleccion != JOptionPane.OK_OPTION) {
             return;
         }
-        String lineaSeleccionada =
-                (String) comboLinea.getSelectedItem();
+        String lineaSeleccionada = (String) comboLinea.getSelectedItem();
         if (lineaSeleccionada == null) {
             mostrarError("Debe seleccionar una línea.");
             return;
@@ -732,10 +708,8 @@ private void accionSubredes() {
 }
     /**
      * Muestra en el registro las subredes encontradas.
-     *
      * Cada subred es una ListaEnlazada dentro de otra lista. Si una
      * subred tiene una sola estación, se marca como aislada.
-     *
      * @param descripcion texto que indica qué caso se está analizando.
      * @param subredes    lista que contiene las subredes encontradas.
      */
@@ -763,7 +737,6 @@ private void accionSubredes() {
 
     /**
      * Calcula y muestra los hubs de la red.
-     * 
      * Un hub es una estación con muchas conexiones directas. El usuario indica
      * cuántos quiere ver y se muestran ordenados por centralidad de grado.
      */
@@ -775,7 +748,6 @@ private void accionSubredes() {
         String texto = JOptionPane.showInputDialog(this, 
                 "¿Cuántos hubs mostrar?", "5");
         if (texto == null) return;
-
         int k;
         try {
             k = Integer.parseInt(texto.trim());
@@ -787,7 +759,6 @@ private void accionSubredes() {
             mostrarError("Ingrese un número mayor que 0.");
             return;
         }
-
         ListaEnlazada hubs = analizador.calcularCentralidadGrado(k);
         mostrarMensaje("Hubs (top " + hubs.obtenerTamano() 
                 + " por conexiones directas):");
@@ -802,7 +773,6 @@ private void accionSubredes() {
 
     /**
      * Abre un diálogo para elegir un archivo CSV.
-     *
      * @param titulo título que se mostrará en el diálogo.
      * @return el archivo elegido, o {@code null} si el usuario cancela.
      */
@@ -811,7 +781,6 @@ private void accionSubredes() {
         fc.setDialogTitle(titulo);
         fc.setFileFilter(new FileNameExtensionFilter("Archivos CSV", "csv"));
         if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return null;
-
         File f = fc.getSelectedFile();
         ultimaCarpeta = f.getParentFile();
         return f;
@@ -819,7 +788,6 @@ private void accionSubredes() {
 
     /**
      * Muestra un cuadro de advertencia con opciones Sí/No.
-     *
      * @param mensaje texto que se mostrará al usuario.
      * @return {@code true} si el usuario confirma; {@code false} en caso 
      * contrario.
@@ -832,7 +800,6 @@ private void accionSubredes() {
 
     /**
      * Pide al usuario que elija una estación de una lista.
-     *
      * @param titulo   título del diálogo.
      * @param mensaje  mensaje que se muestra antes de la lista.
      * @param opciones estaciones entre las que se puede elegir.
@@ -852,10 +819,8 @@ private void accionSubredes() {
 
     /**
      * Convierte la lista de estaciones del grafo en un arreglo.
-     * 
      * Se usa para poder pasar las estaciones a los diálogos de Swing, que
      * trabajan mejor con arreglos.
-     *
      * @return arreglo con todas las estaciones del grafo.
      */
     private Estacion[] todasLasEstaciones() {
@@ -870,7 +835,6 @@ private void accionSubredes() {
 
     /**
      * Devuelve todas las estaciones menos una.
-     *
      * @param excluida estación que no debe aparecer en el resultado.
      * @return arreglo con las estaciones restantes.
      */
@@ -888,9 +852,7 @@ private void accionSubredes() {
 
     /**
      * Obtiene las estaciones vecinas directas de una estación.
-     * <p>
      * Recorre las conexiones del origen y toma el destino de cada una.
-     *
      * @param origen estación de la que se quieren conocer los vecinos.
      * @return arreglo con las estaciones vecinas.
      */
@@ -906,7 +868,6 @@ private void accionSubredes() {
 
     /**
      * Obtiene las líneas que existen actualmente en el grafo.
-     *
      * @return arreglo con los nombres de las líneas.
      */
     private String[] lineasExistentes() {
@@ -921,10 +882,8 @@ private void accionSubredes() {
 
     /**
      * Comprueba que un texto sea válido para guardarlo en el CSV.
-     * <p>
      * El formato CSV usa comas y saltos de línea como separadores, por eso no
      * se permiten dentro de los campos.
-     *
      * @param texto texto que se quiere validar.
      * @return {@code true} si el texto no está vacío y no contiene comas ni 
      * saltos de línea.
@@ -936,10 +895,8 @@ private void accionSubredes() {
 
     /**
      * Convierte un texto en un tiempo de viaje.
-     *
      * Acepta coma como separador decimal. Si el valor no es válido o no es
      * mayor que cero, devuelve {@code -1}.
-     *
      * @param texto texto que contiene el tiempo.
      * @return el tiempo convertido, o {@code -1} si no es válido.
      */
@@ -954,7 +911,6 @@ private void accionSubredes() {
 
     /**
      * Pide un tiempo de viaje al usuario hasta que sea válido o cancele.
-     *
      * @param mensaje mensaje que se mostrará en el diálogo.
      * @return el tiempo introducido, o {@code null} si el usuario cancela.
      */
@@ -972,10 +928,8 @@ private void accionSubredes() {
 
     /**
      * Convierte una lista enlazada en un texto legible.
-     * <p>
      * Si el dato es una estación, se usa su nombre; si no, se usa su
      * representación normal con {@code toString()}.
-     *
      * @param lista      lista que se quiere convertir.
      * @param separador  texto que se coloca entre los elementos.
      * @return cadena con todos los elementos de la lista.
@@ -993,7 +947,6 @@ private void accionSubredes() {
 
     /**
      * Escribe una línea en el registro de la ventana.
-     *
      * @param texto mensaje que se quiere mostrar.
      */
     public void mostrarMensaje(String texto) {
@@ -1003,7 +956,6 @@ private void accionSubredes() {
 
     /**
      * Muestra un cuadro de error.
-     *
      * @param texto mensaje de error que se quiere mostrar.
      */
     public void mostrarError(String texto) {
@@ -1013,35 +965,30 @@ private void accionSubredes() {
 
     /**
      * Devuelve la tabla hash de estaciones.
-     *
      * @return tabla hash usada por la ventana.
      */
     public TablaHash getTabla() { return tabla; }
 
     /**
      * Devuelve el grafo ponderado de la red.
-     *
      * @return grafo usado por la ventana.
      */
     public GrafoPonderado getGrafo() { return grafo; }
 
     /**
      * Devuelve el gestor de archivos.
-     *
      * @return gestor encargado de leer y guardar los CSV.
      */
     public GestorArchivo getGestor() { return gestor; }
 
     /**
      * Devuelve el analizador de la red.
-     *
      * @return analizador que ejecuta los algoritmos sobre el grafo.
      */
     public AnalizadorRed getAnalizador() { return analizador; }
 
     /**
      * Devuelve el visualizador del grafo.
-     *
      * @return visualizador encargado de dibujar la red.
      */
     public VisualizadorGrafo getVisualizador() { return visualizador; }
