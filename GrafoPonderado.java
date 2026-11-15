@@ -18,13 +18,19 @@ import urbanroute.tda.Nodo;
  */
 public class GrafoPonderado {
 
-    /** Lista con todas las estaciones registradas en el grafo. */
+    /**
+     * Lista con todas las estaciones registradas en el grafo. 
+     */
     private ListaEnlazada<Estacion> estaciones;
 
-    /** Tabla hash que permite buscar estaciones por su ID. */
+    /** 
+     * Tabla hash que permite buscar estaciones por su ID. 
+     */
     private TablaHash indice;
 
-    /** Indica si el grafo es dirigido o no. */
+    /** 
+     * Indica si el grafo es dirigido o no. 
+     */
     private boolean dirigido;
 
     /**
@@ -74,16 +80,13 @@ public class GrafoPonderado {
         if (e == null) {
             return false;
         }
-
         // Se usa tiempo 0: al comparar conexiones solo importan origen y destino
         for (Nodo<Estacion> n = estaciones.getCabeza(); 
              n != null; 
              n = n.getSiguiente()) {
-            
-            Estacion otra = n.getDato();
-            otra.getConexiones().eliminar(new Conexion(otra, e, 0));
-        }
-        
+                Estacion otra = n.getDato();
+                otra.getConexiones().eliminar(new Conexion(otra, e, 0));
+        }        
         e.getConexiones().vaciar();
         estaciones.eliminar(e);
         indice.eliminar(id);
@@ -98,14 +101,11 @@ public class GrafoPonderado {
      */
     public boolean agregarConexion(
             Estacion origen, Estacion destino, double tiempo) {
-        
-        if (origen == null || destino == null || origen.equals(destino) ||
-                tiempo < 0) {
-            return false;
+                if (origen == null || destino == null || 
+                    origen.equals(destino) || tiempo < 0) {
+                return false;
         }
-
         registrarConexion(origen, destino, tiempo);
-
         // Si es no dirigido, la conexion se recorre en ambos sentidos.
         if (!dirigido) {
             registrarConexion(destino, origen, tiempo);
@@ -115,13 +115,12 @@ public class GrafoPonderado {
 
     /**
      * Version alternativa para agregar una conexion buscando las estaciones 
-     * directamente por sus textos de ID. Devuelve verdadero si se registro.
+     * directamente por sus textos de ID. Devuelve verdadero si se registró.
      */
     public boolean agregarConexion(
             String idOrigen, String idDestino, double tiempo) {
         return agregarConexion(
-                indice.buscar(idOrigen), indice.buscar(idDestino), tiempo
-        );
+                indice.buscar(idOrigen), indice.buscar(idDestino), tiempo);
     }
 
     /**
@@ -131,8 +130,7 @@ public class GrafoPonderado {
     private void registrarConexion(Estacion a, Estacion b, double tiempo) {
         Conexion existente = (Conexion)
                 a.getConexiones().buscar(new Conexion(a, b, 0));
-        
-        if (existente != null) {
+                if (existente != null) {
             existente.setTiempo(tiempo);
         } else {
             a.getConexiones().insertar(new Conexion(a, b, tiempo));
@@ -150,9 +148,7 @@ public class GrafoPonderado {
         }
         boolean eliminada = origen.getConexiones().
                 eliminar(new Conexion(origen, destino, 0));
-        
-        if (!dirigido) {
-            eliminada = destino.getConexiones().
+                if (!dirigido) {eliminada = destino.getConexiones().
                     eliminar(new Conexion(destino, origen, 0)) || eliminada;
         }
         return eliminada;
@@ -194,13 +190,11 @@ public class GrafoPonderado {
      */
     public ListaEnlazada<String> obtenerLineas() {
         ListaEnlazada<String> lineas = new ListaEnlazada<>();
-        
-        for (Nodo<Estacion> n = estaciones.getCabeza(); 
+                for (Nodo<Estacion> n = estaciones.getCabeza(); 
              n != null; 
              n = n.getSiguiente()) {
             
             String linea = n.getDato().getLinea();
-
             if (lineas.buscar(linea) == null) {
                 lineas.insertar(linea);
             }
@@ -224,8 +218,7 @@ public class GrafoPonderado {
         for (Nodo<Estacion> n = estaciones.getCabeza(); 
              n != null; 
              n = n.getSiguiente()) {
-            
-            total += n.getDato().getConexiones().obtenerTamano();
+                total += n.getDato().getConexiones().obtenerTamano();
         }
         return total;
     }
@@ -237,8 +230,7 @@ public class GrafoPonderado {
         for (Nodo<Estacion> n = estaciones.getCabeza(); 
              n != null; 
              n = n.getSiguiente()) {
-            
-            n.getDato().getConexiones().vaciar();
+                n.getDato().getConexiones().vaciar();
         }
     }
 
