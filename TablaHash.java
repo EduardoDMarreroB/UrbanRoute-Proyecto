@@ -7,7 +7,8 @@ import urbanroute.tda.Nodo;
  * Implementación propia de una Tabla Hash diseñada para almacenar y buscar 
  * de manera eficiente las estaciones utilizando su ID como clave.
  * Esta estructura de datos optimiza las operaciones de búsqueda e inserción, 
- * basándose en una función de dispersión (hash) y un manejo adecuado de colisiones.
+ * basándose en una función de dispersión (hash) y un manejo adecuado de 
+ * colisiones.
  * Referencia teórica: https://n9.cl/hash_table
  */
 public class TablaHash {
@@ -97,7 +98,7 @@ public class TablaHash {
      * Convierte el ID (texto) en un número, multiplicando por 
      * 31 en cada letra. Se utiliza el 31 porque es el estándar matemático en 
      * Java para mezclar bien los datos y evitar que IDs parecidos caigan en la
-     * misma casilla. Al final, aplicamos el módulo (%) para asegurarnos de que
+     * misma casilla. Al final, se aplica el módulo (%) para asegurarnos de que
      * el número resultante no se salga del tamaño de nuestro arreglo.
      * Referencia teórica sobre el multiplicador 31: https://n9.cl/zx7rs
      * @param clave El ID de la estación.
@@ -348,7 +349,7 @@ public class TablaHash {
      * la nueva capacidad siga siendo un número primo. Si se le pasa un número
      * par, le suma uno y de ahí en adelante va saltando de dos en dos buscando
      * solo entre impares.
-     * @param numero El número base (idealmente el doble de la capacidad actual).
+     * @param numero El número base (idealmente el doble de la capacidad actual)
      * @return El primer número primo que sea igual o mayor al número dado.
      */
     private int siguientePrimo(int numero) {
