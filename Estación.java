@@ -159,7 +159,6 @@ public class Estacion {
         if (valor == null) { // Si no hay texto, devolvemos vacío
             return "";
         }
-
         // Si tiene comas o saltos de línea, lo encerramos en comillas dobles
         if (valor.contains(",") || valor.contains("\"")
                 || valor.contains("\n") || valor.contains("\r")) {
@@ -186,11 +185,9 @@ public class Estacion {
         if (this == objeto) { // Si es exactamente la misma en memoria
             return true;
         }
-
         if (!(objeto instanceof Estacion)) { // Si no es una estación
             return false;
         }
-
         Estacion otra = (Estacion) objeto; // Conversión segura
         return id.equals(otra.id); // Comparamos los IDs
     }
