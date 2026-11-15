@@ -18,9 +18,7 @@ public class Conexion {
                     "Las estaciones no pueden ser nulas."
             );
         }
-
         validarTiempo(tiempo); // Revisamos que el tiempo tenga sentido
-
         this.origen = origen;
         this.destino = destino;
         this.tiempo = tiempo;
